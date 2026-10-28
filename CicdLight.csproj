@@ -21,6 +21,7 @@
   <ItemGroup>
 	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\scenario-instructions.md" />
 	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\01-upgrade-project-and-winui-shell\progress-details.md" />
+	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\02-migrate-tray-and-menu\progress-details.md" />
   </ItemGroup>
 
   <ItemGroup>

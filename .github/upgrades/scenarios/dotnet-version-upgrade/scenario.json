@@ -3,12 +3,12 @@
   "operationId": "7f7b172c-83b4-41f7-a87d-6a74d94dea96",
   "description": "Upgrade .NET projects to newer .NET versions, including guidance on current release status, support lifecycle (LTS/STS), and recommended upgrade targets.",
   "startTime": "2026-10-28T13:46:57.1126813Z",
-  "lastUpdateTime": "2026-10-28T13:52:38.7922086Z",
+  "lastUpdateTime": "2026-10-28T14:30:47.4097434Z",
   "properties": {
     "UpgradeTargetFramework": "net10.0",
     "taskStates": {
       "01-upgrade-project-and-winui-shell": "Completed",
-      "02-migrate-tray-and-menu": "InProgress"
+      "02-migrate-tray-and-menu": "Completed"
     }
   },
   "folderPath": ""
