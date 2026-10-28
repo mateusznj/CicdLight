@@ -24,6 +24,8 @@ public sealed class TrayController : IDisposable
     private HashSet<int>? _previousReviewPrs;
     private string? _notificationUrl;
     private bool _refreshing;
+    private SettingsWindow? _settingsWindow;
+    private ChoosePipelinesWindow? _choose;
 
     public TrayController()
     {
@@ -202,12 +204,37 @@ public sealed class TrayController : IDisposable
 
     private void ChoosePipelines()
     {
-        // Implemented in task 03 (ChoosePipelinesWindow).
+        var items = _all.Builds.Select(b => (Key: b.Key, Text: $"Pipeline: {b.Project} / {b.Definition}"))
+            .Concat(_all.Releases.Select(r => (Key: r.Key, Text: $"Release: {r.Project} / {r.Definition}")))
+            .OrderBy(i => i.Text).ToList();
+        if (items.Count == 0)
+        {
+            _tray.ShowNotification("CicdLight", "No pipelines loaded yet. Check the settings and refresh first.", NotificationIcon.Info);
+            return;
+        }
+
+        if (_choose != null) { _choose.Activate(); return; }
+        _choose = new ChoosePipelinesWindow(items, _settings.WatchedItems, chosen =>
+        {
+            _settings.WatchedItems = chosen.Count == items.Count ? [] : chosen;
+            _settings.Save();
+            _snapshot = _all.Filter(_settings.WatchedItems);
+            Update();
+        });
+        _choose.Closed += (_, _) => _choose = null;
+        _choose.Activate();
     }
 
     private void ShowSettings()
     {
-        // Implemented in task 03 (SettingsWindow).
+        if (_settingsWindow != null) { _settingsWindow.Activate(); return; }
+        _settingsWindow = new SettingsWindow(_settings, () =>
+        {
+            _settings = AppSettings.Load();
+            ApplySettings();
+        });
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Activate();
     }
 
     private static void OpenUrl(string? url)
