@@ -21,7 +21,7 @@
 
 ## 🇵🇱 Polski
 
-CicdLight to niewielka aplikacja inspirowana CatLight, która pozwala śledzić status pipeline'ów, wydań i pull requestów w Azure DevOps bez ciągłego otwierania przeglądarki.
+CicdLight to niewielka aplikacja, która pozwala śledzić status pipeline'ów, wydań i pull requestów w Azure DevOps bez ciągłego otwierania przeglądarki.
 
 ### Funkcje
 
@@ -71,7 +71,7 @@ Obsługa kolejnych scenariuszy release pipelines, work items, Azure Resource Hea
 
 ## 🇬🇧 English
 
-CicdLight is a small Windows system tray application inspired by CatLight. It keeps Azure DevOps pipelines, releases and pull requests in view without requiring you to constantly check the browser.
+CicdLight is a small Windows system tray application that keeps Azure DevOps pipelines, releases and pull requests in view without requiring you to constantly check the browser.
 
 ### Features
 
