@@ -16,6 +16,7 @@ public class AppSettings
     public bool Notifications { get; set; } = true;
     public bool OnlyMyBuilds { get; set; } = false;
     public bool StartWithWindows { get; set; } = false;
+    public string Language { get; set; } = "";                 // "" = system, "en", "pl"
     public List<string> WatchedItems { get; set; } = [];   // keys of watched pipelines/releases; empty = all
 
     [System.Text.Json.Serialization.JsonIgnore]

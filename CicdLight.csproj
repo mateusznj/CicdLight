@@ -14,6 +14,8 @@
   <EnableMsixTooling>true</EnableMsixTooling>
   <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   <Nullable>enable</Nullable>
+  <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+  <SatelliteResourceLanguages>en;pl</SatelliteResourceLanguages>
   <ImplicitUsings>enable</ImplicitUsings>
   <!-- Projekt czysto zarządzany: pomijamy wyszukiwanie narzędzi MSVC (workload C++ nie jest wymagany). -->
   <VCInstallPath32>$(MSBuildProjectDirectory)\</VCInstallPath32>
@@ -27,6 +29,12 @@
   <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\02-migrate-tray-and-menu\progress-details.md" />
   <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\03-migrate-settings-windows\progress-details.md" />
   <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\04-readme-and-validation\progress-details.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+  <EmbeddedResource Update="Strings.resx" />
+  <EmbeddedResource Update="Strings.pl.resx" />
+  <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

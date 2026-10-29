@@ -29,6 +29,7 @@ public sealed class TrayController : IDisposable
 
     public TrayController()
     {
+        Strings.SetLanguage(_settings.Language);
         _tray = new TaskbarIcon
         {
             Icon = MakeIcon(Health.Unknown),
@@ -62,6 +63,7 @@ public sealed class TrayController : IDisposable
 
     private void ApplySettings()
     {
+        Strings.SetLanguage(_settings.Language);
         _client?.Dispose();
         _client = _settings.IsConfigured ? new AzureDevOpsClient(_settings) : null;
         _previousBuilds = null;
@@ -76,7 +78,7 @@ public sealed class TrayController : IDisposable
         if (_refreshing) return;
         if (_client == null)
         {
-            _snapshot = Snapshot.Empty("Not configured");
+            _snapshot = Snapshot.Empty(Strings.Get("Tray_NotConfigured"));
             Update();
             return;
         }
@@ -111,13 +113,13 @@ public sealed class TrayController : IDisposable
                 if (old != null && old.Id == b.Id && old.IsRunning == b.IsRunning) continue;
 
                 if (b.IsFailed)
-                    Toast($"Build failed: {b.Definition}", $"{b.Branch} #{b.BuildNumber} ({b.RequestedFor})", b.Url, NotificationIcon.Error);
+                    Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, NotificationIcon.Error);
                 else if (b.IsSucceeded && old != null && old.IsFailed)
-                    Toast($"Build fixed: {b.Definition}", $"{b.Branch} #{b.BuildNumber}", b.Url, NotificationIcon.Info);
+                    Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, NotificationIcon.Info);
             }
 
             foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Id)))
-                Toast($"Review requested: {p.Repository}", $"#{p.Id} {p.Title} - {p.Author}", p.Url, NotificationIcon.Info);
+                Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
         }
 
         _previousBuilds = builds;
@@ -139,8 +141,8 @@ public sealed class TrayController : IDisposable
         var failed = _snapshot.Builds.Count(b => b.IsFailed && !b.IsRunning);
         var reviews = _snapshot.PullRequests.Count(p => p.NeedsMyReview);
         var text = _snapshot.Error != null
-            ? $"CicdLight: {_snapshot.Error}"
-            : $"CicdLight: {failed} failed, {reviews} to review";
+            ? Strings.Format("Tooltip_Error", _snapshot.Error)
+            : Strings.Format("Tooltip_Summary", failed, reviews);
         _tray.ToolTipText = text.Length > 127 ? text[..127] : text;
         if (_popup.IsVisible) _popup.Render(_snapshot);
     }
@@ -155,12 +157,12 @@ public sealed class TrayController : IDisposable
 
     private void ChoosePipelines()
     {
-        var items = _all.Builds.Select(b => (Key: b.Key, Project: b.Project, Text: $"Pipeline: {b.Definition}"))
-            .Concat(_all.Releases.Select(r => (Key: r.Key, Project: r.Project, Text: $"Release: {r.Definition}")))
+        var items = _all.Builds.Select(b => (Key: b.Key, Project: b.Project, Text: b.Definition))
+            .Concat(_all.Releases.Select(r => (Key: r.Key, Project: r.Project, Text: r.Definition)))
             .OrderBy(i => i.Project).ThenBy(i => i.Text).ToList();
         if (items.Count == 0)
         {
-            _tray.ShowNotification("CicdLight", "No pipelines loaded yet. Check the settings and refresh first.", NotificationIcon.Info);
+            _tray.ShowNotification("CicdLight", Strings.Get("Toast_NoPipelines"), NotificationIcon.Info);
             return;
         }
 
@@ -209,9 +211,16 @@ public sealed class TrayController : IDisposable
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             using var brush = new SolidBrush(color);
-            using var pen = new Pen(Color.FromArgb(200, 255, 255, 255), 2);
-            g.FillEllipse(brush, 3, 3, 26, 26);
-            g.DrawEllipse(pen, 3, 3, 26, 26);
+            using var pen = new Pen(Color.White, 2.4f) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round };
+            using var path = new GraphicsPath();
+            const float x = 2, w = 28, d = 12;
+            path.AddArc(x, x, d, d, 180, 90);
+            path.AddArc(x + w - d, x, d, d, 270, 90);
+            path.AddArc(x + w - d, x + w - d, d, d, 0, 90);
+            path.AddArc(x, x + w - d, d, d, 90, 90);
+            path.CloseFigure();
+            g.FillPath(brush, path);
+            g.DrawLines(pen, [new PointF(6f, 17f), new PointF(11.5f, 17f), new PointF(14.5f, 9.5f), new PointF(18.5f, 22.5f), new PointF(21f, 16f), new PointF(26f, 16f)]);
         }
         return Icon.FromHandle(bmp.GetHicon());
     }

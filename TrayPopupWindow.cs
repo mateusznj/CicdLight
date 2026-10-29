@@ -43,16 +43,15 @@ public sealed class TrayPopupWindow : Window
         var subtle = (Style)Application.Current.Resources["SubtleButtonStyle"];
 
         var refreshBtn = new Button { Content = new FontIcon { Glyph = "\uE72C", FontSize = 16 }, Style = subtle };
-        ToolTipService.SetToolTip(refreshBtn, "Refresh now");
-        refreshBtn.Click += (_, _) => refresh();
+        ToolTipService.SetToolTip(refreshBtn, Strings.Get("Popup_Refresh"));        refreshBtn.Click += (_, _) => refresh();
 
         var gear = new Button { Content = new FontIcon { Glyph = "\uE713", FontSize = 16 }, Style = subtle };
         var flyout = new MenuFlyout();
-        flyout.Items.Add(MenuItem("Settings...", "\uE713", () => { Hide(); settings(); }));
-        flyout.Items.Add(MenuItem("Choose pipelines...", "\uE762", () => { Hide(); choose(); }));
-        flyout.Items.Add(MenuItem("Open Azure DevOps", "\uE774", () => { Hide(); openOrg(); }));
+        flyout.Items.Add(MenuItem(Strings.Get("Menu_Settings"), "\uE713", () => { Hide(); settings(); }));
+        flyout.Items.Add(MenuItem(Strings.Get("Menu_Choose"), "\uE762", () => { Hide(); choose(); }));
+        flyout.Items.Add(MenuItem(Strings.Get("Menu_OpenOrg"), "\uE774", () => { Hide(); openOrg(); }));
         flyout.Items.Add(new MenuFlyoutSeparator());
-        flyout.Items.Add(MenuItem("Exit", "\uE711", exit));
+        flyout.Items.Add(MenuItem(Strings.Get("Menu_Exit"), "\uE711", exit));
         gear.Flyout = flyout;
 
         var title = new StackPanel
@@ -118,32 +117,32 @@ public sealed class TrayPopupWindow : Window
     {
         var failed = s.Builds.Count(b => b.IsFailed && !b.IsRunning);
         var reviews = s.PullRequests.Count(p => p.NeedsMyReview);
-        _status.Text = s.Error ?? $"{failed} failed, {reviews} to review";
+        _status.Text = s.Error ?? Strings.Format("Status_Summary", failed, reviews);
 
         _list.Children.Clear();
 
         var builds = s.Builds.OrderByDescending(b => b.Time ?? DateTimeOffset.MinValue).Take(MaxBuilds).ToList();
-        AddHeader("Pipelines", builds.Count == 0 ? null : $"latest {builds.Count}");
+        AddHeader(Strings.Get("Section_Pipelines"), builds.Count == 0 ? null : Strings.Format("Section_Latest", builds.Count));
         foreach (var b in builds)
             AddRow(BuildGlyph(b), b.Definition, $"{b.Branch} · {b.RequestedFor}", Ago(b.Time), b.Url, $"{b.Project} #{b.BuildNumber}");
 
         var releases = s.Releases.OrderByDescending(r => r.IsFailed).ThenByDescending(r => r.IsRunning).Take(3).ToList();
-        if (releases.Count > 0) AddHeader("Releases", null);
+        if (releases.Count > 0) AddHeader(Strings.Get("Section_Releases"), null);
         foreach (var r in releases)
             AddRow(r.IsRunning ? Glyph.Running : r.IsFailed ? Glyph.Failed : Glyph.Ok, r.Definition, r.ReleaseName, "", r.Url, r.Project);
 
         var review = s.PullRequests.Where(p => p.NeedsMyReview).Take(5).ToList();
-        if (review.Count > 0) AddHeader("Review requested", $"{reviews}");
+        if (review.Count > 0) AddHeader(Strings.Get("Section_Review"), $"{reviews}");
         foreach (var p in review)
             AddRow(Glyph.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project);
 
         var mine = s.PullRequests.Where(p => p.IsMine).Take(3).ToList();
-        if (mine.Count > 0) AddHeader("My pull requests", null);
+        if (mine.Count > 0) AddHeader(Strings.Get("Section_MyPrs"), null);
         foreach (var p in mine)
             AddRow(Glyph.Pr, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project);
 
         if (_list.Children.Count == 0)
-            _list.Children.Add(new TextBlock { Text = s.Error ?? "Nothing to show yet.", Margin = new Thickness(8), TextWrapping = TextWrapping.Wrap, Opacity = 0.7 });
+            _list.Children.Add(new TextBlock { Text = s.Error ?? Strings.Get("Popup_Nothing"), Margin = new Thickness(8), TextWrapping = TextWrapping.Wrap, Opacity = 0.7 });
     }
 
     private void AddHeader(string text, string? note)
@@ -214,10 +213,10 @@ public sealed class TrayPopupWindow : Window
     {
         if (t == null) return "";
         var d = DateTimeOffset.Now - t.Value;
-        if (d.TotalSeconds < 60) return "just now";
-        if (d.TotalMinutes < 60) return $"{(int)d.TotalMinutes} min ago";
-        if (d.TotalHours < 24) return $"{(int)d.TotalHours} h ago";
-        return $"{(int)d.TotalDays} d ago";
+        return Strings.Get("Ago_Now");
+        return Strings.Format("Ago_Min", (int)d.TotalMinutes);
+        return Strings.Format("Ago_Hour", (int)d.TotalHours);
+        return Strings.Format("Ago_Day", (int)d.TotalDays);
     }
 
     /// <summary>Wysuwa okno na wierzch (okna aplikacji z zasobnika bywają otwierane „pod spodem”).</summary>

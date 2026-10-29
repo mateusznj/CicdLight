@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Tray_NotConfigured" xml:space="preserve"><value>Nie skonfigurowano</value></data>
+  <data name="Status_Summary" xml:space="preserve"><value>Błędne: {0}, do przeglądu: {1}</value></data>
+  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: błędne {0}, do przeglądu {1}</value></data>
+  <data name="Tooltip_Error" xml:space="preserve"><value>CicdLight: {0}</value></data>
+  <data name="Toast_BuildFailed" xml:space="preserve"><value>Build zakończony błędem: {0}</value></data>
+  <data name="Toast_BuildFailedText" xml:space="preserve"><value>{0} #{1} ({2})</value></data>
+  <data name="Toast_BuildFixed" xml:space="preserve"><value>Build naprawiony: {0}</value></data>
+  <data name="Toast_BuildFixedText" xml:space="preserve"><value>{0} #{1}</value></data>
+  <data name="Toast_Review" xml:space="preserve"><value>Prośba o przegląd: {0}</value></data>
+  <data name="Toast_ReviewText" xml:space="preserve"><value>#{0} {1} - {2}</value></data>
+  <data name="Toast_NoPipelines" xml:space="preserve"><value>Nie załadowano jeszcze pipeline'ów. Sprawdź ustawienia i odśwież.</value></data>
+  <data name="Popup_Refresh" xml:space="preserve"><value>Odśwież teraz</value></data>
+  <data name="Menu_Settings" xml:space="preserve"><value>Ustawienia...</value></data>
+  <data name="Menu_Choose" xml:space="preserve"><value>Wybierz pipeline'y...</value></data>
+  <data name="Menu_OpenOrg" xml:space="preserve"><value>Otwórz Azure DevOps</value></data>
+  <data name="Menu_Exit" xml:space="preserve"><value>Zakończ</value></data>
+  <data name="Section_Pipelines" xml:space="preserve"><value>Pipeline'y</value></data>
+  <data name="Section_Latest" xml:space="preserve"><value>ostatnie {0}</value></data>
+  <data name="Section_Releases" xml:space="preserve"><value>Releasy</value></data>
+  <data name="Section_Review" xml:space="preserve"><value>Do przeglądu</value></data>
+  <data name="Section_MyPrs" xml:space="preserve"><value>Moje pull requesty</value></data>
+  <data name="Popup_Nothing" xml:space="preserve"><value>Na razie nic do pokazania.</value></data>
+  <data name="Ago_Now" xml:space="preserve"><value>przed chwilą</value></data>
+  <data name="Ago_Min" xml:space="preserve"><value>{0} min temu</value></data>
+  <data name="Ago_Hour" xml:space="preserve"><value>{0} godz. temu</value></data>
+  <data name="Ago_Day" xml:space="preserve"><value>{0} d. temu</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>CicdLight - Ustawienia</value></data>
+  <data name="Settings_Org" xml:space="preserve"><value>Organizacja (nazwa lub URL)</value></data>
+  <data name="Settings_Projects" xml:space="preserve"><value>Projekty (po przecinku, puste = wszystkie)</value></data>
+  <data name="Settings_Pat" xml:space="preserve"><value>Personal Access Token</value></data>
+  <data name="Settings_Poll" xml:space="preserve"><value>Odświeżaj co (sekundy)</value></data>
+  <data name="Settings_Notify" xml:space="preserve"><value>Pokazuj powiadomienia</value></data>
+  <data name="Settings_Mine" xml:space="preserve"><value>Tylko buildy uruchomione przeze mnie</value></data>
+  <data name="Settings_Startup" xml:space="preserve"><value>Uruchamiaj z Windows</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>Język (dotyczy nowo otwieranych okien)</value></data>
+  <data name="Language_System" xml:space="preserve"><value>Domyślny systemowy</value></data>
+  <data name="Button_Save" xml:space="preserve"><value>Zapisz</value></data>
+  <data name="Button_Cancel" xml:space="preserve"><value>Anuluj</value></data>
+  <data name="Choose_Title" xml:space="preserve"><value>CicdLight - Wybór pipeline'ów</value></data>
+  <data name="Error_Auth" xml:space="preserve"><value>Autoryzacja nieudana - sprawdź PAT i jego uprawnienia.</value></data>
+  <data name="Error_Html" xml:space="preserve"><value>Nieoczekiwana odpowiedź HTML - sprawdź nazwę organizacji i PAT.</value></data>
+</root>

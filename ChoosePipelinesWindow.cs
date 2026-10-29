@@ -10,7 +10,8 @@ public sealed class ChoosePipelinesWindow : Window
 
     public ChoosePipelinesWindow(IReadOnlyList<(string Key, string Project, string Text)> items, ICollection<string> watched, Action<List<string>> onSaved)
     {
-        Title = "CicdLight - Choose pipelines";
+        Title = Strings.Get("Choose_Title");
+        WindowIcon.Apply(this);
         AppWindow.Resize(new SizeInt32(560, 620));
 
         var list = new StackPanel { Spacing = 6, Padding = new Thickness(16) };
@@ -18,12 +19,26 @@ public sealed class ChoosePipelinesWindow : Window
         {
             var children = new List<CheckBox>();
             var body = new StackPanel { Spacing = 2, Padding = new Thickness(24, 0, 0, 0) };
-            foreach (var (key, _, text) in group.OrderBy(i => i.Text, StringComparer.CurrentCultureIgnoreCase))
+            foreach (var (prefix, title) in new[] { ("B:", Strings.Get("Section_Pipelines")), ("R:", Strings.Get("Section_Releases")) })
             {
-                var box = new CheckBox { Content = text, IsChecked = watched.Count == 0 || watched.Contains(key) };
-                _boxes.Add((key, box));
-                children.Add(box);
-                body.Children.Add(box);
+                var part = group.Where(i => i.Key.StartsWith(prefix))
+                    .OrderBy(i => i.Text, StringComparer.CurrentCultureIgnoreCase).ToList();
+                if (part.Count == 0) continue;
+
+                body.Children.Add(new TextBlock
+                {
+                    Text = $"{title} ({part.Count})",
+                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                    Opacity = 0.7,
+                    Margin = new Thickness(0, body.Children.Count == 0 ? 0 : 8, 0, 2)
+                });
+                foreach (var (key, _, text) in part)
+                {
+                    var box = new CheckBox { Content = text, IsChecked = watched.Count == 0 || watched.Contains(key) };
+                    _boxes.Add((key, box));
+                    children.Add(box);
+                    body.Children.Add(box);
+                }
             }
 
             var header = new CheckBox { IsThreeState = true, Content = $"{group.Key} ({children.Count})" };
@@ -59,8 +74,8 @@ public sealed class ChoosePipelinesWindow : Window
             });
         }
 
-        var save = new Button { Content = "Save", Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
-        var cancel = new Button { Content = "Cancel" };
+        var save = new Button { Content = Strings.Get("Button_Save"), Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
+        var cancel = new Button { Content = Strings.Get("Button_Cancel") };
         save.Click += (_, _) =>
         {
             var chosen = _boxes.Where(b => b.Box.IsChecked == true).Select(b => b.Key).ToList();

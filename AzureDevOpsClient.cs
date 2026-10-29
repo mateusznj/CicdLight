@@ -163,11 +163,11 @@ public sealed class AzureDevOpsClient : IDisposable
     {
         using var resp = await _http.GetAsync(url, ct);
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            throw new InvalidOperationException("Authorization failed - check the PAT and its scopes.");
+            throw new InvalidOperationException(Strings.Get("Error_Auth"));
         resp.EnsureSuccessStatusCode();
         var text = await resp.Content.ReadAsStringAsync(ct);
         if (text.TrimStart().StartsWith('<'))
-            throw new InvalidOperationException("Unexpected HTML response - check organization name and PAT.");
+            throw new InvalidOperationException(Strings.Get("Error_Html"));
         return JsonDocument.Parse(text).RootElement.Clone();
     }
 
