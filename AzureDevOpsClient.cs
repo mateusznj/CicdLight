@@ -49,6 +49,15 @@ public sealed class AzureDevOpsClient : IDisposable
         return json.GetProperty("value").EnumerateArray().Select(p => p.GetProperty("name").GetString()!).ToArray();
     }
 
+    private static DateTimeOffset? ParseTime(System.Text.Json.JsonElement b)
+    {
+        foreach (var name in new[] { "finishTime", "startTime", "queueTime" })
+            if (b.TryGetProperty(name, out var p) && p.ValueKind == System.Text.Json.JsonValueKind.String
+                && DateTimeOffset.TryParse(p.GetString(), out var t))
+                return t;
+        return null;
+    }
+
     // Latest build per definition+branch, newest first.
     private async Task<List<BuildInfo>> GetBuildsAsync(string project, CancellationToken ct)
     {
@@ -67,7 +76,8 @@ public sealed class AzureDevOpsClient : IDisposable
                 b.GetProperty("status").GetString() ?? "",
                 b.TryGetProperty("result", out var r) ? r.GetString() : null,
                 b.TryGetProperty("requestedFor", out var rf) ? rf.GetProperty("displayName").GetString() ?? "" : "",
-                b.GetProperty("_links").GetProperty("web").GetProperty("href").GetString() ?? ""))
+                b.GetProperty("_links").GetProperty("web").GetProperty("href").GetString() ?? "",
+                ParseTime(b)))
             .GroupBy(b => b.Key)
             .Select(g => g.First())
             .ToList();

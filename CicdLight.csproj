@@ -1,37 +1,39 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<OutputType>WinExe</OutputType>
-	<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
-	<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-	<RootNamespace>CicdLight</RootNamespace>
-	<Platforms>x86;x64;ARM64</Platforms>
-	<Platforms>x64;ARM64</Platforms>
+  <OutputType>WinExe</OutputType>
+  <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+  <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+  <RootNamespace>CicdLight</RootNamespace>
+  <Platforms>x64;ARM64</Platforms>
     <Platform Condition="'$(Platform)' == '' Or '$(Platform)' == 'AnyCPU'">x64</Platform>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-	<UseWinUI>true</UseWinUI>
-	<WindowsPackageType>None</WindowsPackageType>
-	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-	<EnableMsixTooling>true</EnableMsixTooling>
-	<DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
-	<Nullable>enable</Nullable>
-	<ImplicitUsings>enable</ImplicitUsings>
+  <UseWinUI>true</UseWinUI>
+  <WindowsPackageType>None</WindowsPackageType>
+  <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+  <EnableMsixTooling>true</EnableMsixTooling>
+  <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+  <Nullable>enable</Nullable>
+  <ImplicitUsings>enable</ImplicitUsings>
+  <!-- Projekt czysto zarządzany: pomijamy wyszukiwanie narzędzi MSVC (workload C++ nie jest wymagany). -->
+  <VCInstallPath32>$(MSBuildProjectDirectory)\</VCInstallPath32>
+  <VCInstallPath64>$(MSBuildProjectDirectory)\</VCInstallPath64>
   </PropertyGroup>
 
   <ItemGroup>
-	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\scenario-instructions.md" />
-	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks.md" />
-	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\01-upgrade-project-and-winui-shell\progress-details.md" />
-	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\02-migrate-tray-and-menu\progress-details.md" />
-	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\03-migrate-settings-windows\progress-details.md" />
-	<None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\04-readme-and-validation\progress-details.md" />
+  <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\scenario-instructions.md" />
+  <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks.md" />
+  <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\01-upgrade-project-and-winui-shell\progress-details.md" />
+  <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\02-migrate-tray-and-menu\progress-details.md" />
+  <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\03-migrate-settings-windows\progress-details.md" />
+  <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\04-readme-and-validation\progress-details.md" />
   </ItemGroup>
 
   <ItemGroup>
-	<PackageReference Include="H.NotifyIcon.WinUI" Version="2.4.1" />
-	<PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.4" />
-	<PackageReference Include="System.Drawing.Common" Version="10.0.14" />
-	<PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
+  <PackageReference Include="H.NotifyIcon.WinUI" Version="2.4.1" />
+  <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.4" />
+  <PackageReference Include="System.Drawing.Common" Version="10.0.14" />
+  <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -13,7 +13,7 @@ namespace CicdLight;
 public sealed class TrayController : IDisposable
 {
     private readonly TaskbarIcon _tray;
-    private readonly MenuFlyout _menu = new();
+    private readonly TrayPopupWindow _popup;
     private readonly DispatcherQueueTimer _timer;
     private AppSettings _settings = AppSettings.Load();
     private AzureDevOpsClient? _client;
@@ -32,21 +32,30 @@ public sealed class TrayController : IDisposable
         _tray = new TaskbarIcon
         {
             Icon = MakeIcon(Health.Unknown),
-            ToolTipText = "CicdLight",
-            ContextFlyout = _menu,
-            ContextMenuMode = ContextMenuMode.PopupMenu,
-            MenuActivation = PopupActivationMode.LeftOrRightClick,
-            NoLeftClickDelay = true
+            ToolTipText = "CicdLight"
         };
         _tray.ForceCreate();
-        _tray.TrayIcon.MessageWindow.BalloonToolTipClicked += (_, _) => OpenUrl(_notificationUrl);
+        _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings, ChoosePipelines,
+            () => OpenUrl(_settings.IsConfigured ? _settings.OrganizationUrl : null), Exit, OpenUrl);
+        _tray.TrayIcon.MessageWindow.MouseEventReceived += (_, e) =>
+        {
+            switch (e.MouseEvent)
+            {
+                case MouseEvent.BalloonToolTipClicked:
+                    OpenUrl(_notificationUrl);
+                    break;
+                case MouseEvent.IconLeftMouseUp:
+                case MouseEvent.IconRightMouseUp:
+                    TogglePopup();
+                    break;
+            }
+        };
 
         _timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
         _timer.IsRepeating = true;
         _timer.Tick += async (_, _) => await RefreshAsync();
 
         ApplySettings();
-        RebuildMenu();
 
         if (!_settings.IsConfigured) ShowSettings();
     }
@@ -133,87 +142,29 @@ public sealed class TrayController : IDisposable
             ? $"CicdLight: {_snapshot.Error}"
             : $"CicdLight: {failed} failed, {reviews} to review";
         _tray.ToolTipText = text.Length > 127 ? text[..127] : text;
-        RebuildMenu();
+        if (_popup.IsVisible) _popup.Render(_snapshot);
     }
 
-    private void RebuildMenu()
+    private void TogglePopup()
     {
-        _menu.Items.Clear();
-
-        if (_snapshot.Error != null)
-            _menu.Items.Add(new MenuFlyoutItem { Text = _snapshot.Error, IsEnabled = false });
-
-        AddSection("Pipelines", _snapshot.Builds
-            .OrderByDescending(b => b.IsFailed).ThenByDescending(b => b.IsRunning).ThenBy(b => b.Project).ThenBy(b => b.Definition)
-            .Select(b => (BuildText(b), b.Url)));
-
-        AddSection("Releases", _snapshot.Releases
-            .OrderByDescending(r => r.IsFailed).ThenByDescending(r => r.IsRunning).ThenBy(r => r.Project).ThenBy(r => r.Definition)
-            .Select(r => (ReleaseText(r), r.Url)));
-
-        AddSection("Review requested", _snapshot.PullRequests.Where(p => p.NeedsMyReview)
-            .Select(p => ($"{p.Repository}  #{p.Id}  {Trim(p.Title)}  ({p.Author})", p.Url)));
-
-        AddSection("My pull requests", _snapshot.PullRequests.Where(p => p.IsMine)
-            .Select(p => ($"{p.Repository}  #{p.Id}  {Trim(p.Title)}", p.Url)));
-
-        if (_menu.Items.Count > 0) _menu.Items.Add(new MenuFlyoutSeparator());
-        AddItem("Refresh now", async () => await RefreshAsync());
-        AddItem("Open Azure DevOps", () => OpenUrl(_settings.IsConfigured ? _settings.OrganizationUrl : null));
-        AddItem("Choose pipelines...", ChoosePipelines);
-        AddItem("Settings...", ShowSettings);
-        _menu.Items.Add(new MenuFlyoutSeparator());
-        AddItem("Exit", Exit);
+        // Kliknięcie w ikonę dezaktywuje popup (Hide), więc ignorujemy ponowne otwarcie tuż po zamknięciu.
+        if (_popup.IsVisible) { _popup.Hide(); return; }
+        if ((DateTime.UtcNow - _popup.HiddenAtUtc).TotalMilliseconds < 300) return;
+        _popup.Show(_snapshot);
     }
-
-    private void AddItem(string text, Action onClick)
-    {
-        var item = new MenuFlyoutItem { Text = text };
-        item.Click += (_, _) => onClick();
-        _menu.Items.Add(item);
-    }
-
-    private void AddSection(string title, IEnumerable<(string Text, string Url)> items)
-    {
-        var list = items.ToList();
-        if (list.Count == 0) return;
-        if (_menu.Items.Count > 0) _menu.Items.Add(new MenuFlyoutSeparator());
-        _menu.Items.Add(new MenuFlyoutItem
-        {
-            Text = $"{title} ({list.Count})",
-            IsEnabled = false,
-            FontWeight = FontWeights.Bold
-        });
-        foreach (var (text, url) in list)
-            AddItem(text, () => OpenUrl(url));
-    }
-
-    private static string BuildText(BuildInfo b)
-    {
-        var mark = b.IsRunning ? "▶" : b.IsFailed ? "✖" : b.IsSucceeded ? "✔" : "•";
-        return $"{mark}  {b.Project} / {b.Definition}";
-    }
-
-    private static string ReleaseText(ReleaseInfo r)
-    {
-        var mark = r.IsRunning ? "▶" : r.IsFailed ? "✖" : "✔";
-        return $"{mark}  {r.Project} / {r.Definition}";
-    }
-
-    private static string Trim(string s) => s.Length > 60 ? s[..57] + "..." : s;
 
     private void ChoosePipelines()
     {
-        var items = _all.Builds.Select(b => (Key: b.Key, Text: $"Pipeline: {b.Project} / {b.Definition}"))
-            .Concat(_all.Releases.Select(r => (Key: r.Key, Text: $"Release: {r.Project} / {r.Definition}")))
-            .OrderBy(i => i.Text).ToList();
+        var items = _all.Builds.Select(b => (Key: b.Key, Project: b.Project, Text: $"Pipeline: {b.Definition}"))
+            .Concat(_all.Releases.Select(r => (Key: r.Key, Project: r.Project, Text: $"Release: {r.Definition}")))
+            .OrderBy(i => i.Project).ThenBy(i => i.Text).ToList();
         if (items.Count == 0)
         {
             _tray.ShowNotification("CicdLight", "No pipelines loaded yet. Check the settings and refresh first.", NotificationIcon.Info);
             return;
         }
 
-        if (_choose != null) { _choose.Activate(); return; }
+        if (_choose != null) { TrayPopupWindow.BringToFront(_choose); return; }
         _choose = new ChoosePipelinesWindow(items, _settings.WatchedItems, chosen =>
         {
             _settings.WatchedItems = chosen.Count == items.Count ? [] : chosen;
@@ -222,19 +173,19 @@ public sealed class TrayController : IDisposable
             Update();
         });
         _choose.Closed += (_, _) => _choose = null;
-        _choose.Activate();
+        TrayPopupWindow.BringToFront(_choose);
     }
 
     private void ShowSettings()
     {
-        if (_settingsWindow != null) { _settingsWindow.Activate(); return; }
+        if (_settingsWindow != null) { TrayPopupWindow.BringToFront(_settingsWindow); return; }
         _settingsWindow = new SettingsWindow(_settings, () =>
         {
             _settings = AppSettings.Load();
             ApplySettings();
         });
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
-        _settingsWindow.Activate();
+        TrayPopupWindow.BringToFront(_settingsWindow);
     }
 
     private static void OpenUrl(string? url)
