@@ -16,6 +16,7 @@
   <data name="Toast_ReviewText" xml:space="preserve"><value>#{0} {1} - {2}</value></data>
   <data name="Toast_NoPipelines" xml:space="preserve"><value>Nie załadowano jeszcze pipeline'ów. Sprawdź ustawienia i odśwież.</value></data>
   <data name="Popup_Refresh" xml:space="preserve"><value>Odśwież teraz</value></data>
+  <data name="Popup_UnresolvedComments" xml:space="preserve"><value>Nierozwiązane komentarze</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>Ustawienia...</value></data>
   <data name="Menu_Choose" xml:space="preserve"><value>Wybierz pipeline'y...</value></data>
   <data name="Menu_OpenOrg" xml:space="preserve"><value>Otwórz Azure DevOps</value></data>

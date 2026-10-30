@@ -21,7 +21,8 @@ public record ReleaseInfo(
 
 public record PullRequestInfo(
     int Id, string Project, string Repository, string Title, string Author,
-    bool IsMine, bool NeedsMyReview, string Url);
+    bool IsMine, bool NeedsMyReview, string Url,
+    string RepositoryId = "", bool HasUnresolvedComments = false);
 
 public record Snapshot(
     IReadOnlyList<BuildInfo> Builds,

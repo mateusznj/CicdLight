@@ -134,12 +134,12 @@ public sealed class TrayPopupWindow : Window
         var review = s.PullRequests.Where(p => p.NeedsMyReview).Take(5).ToList();
         if (review.Count > 0) AddHeader(Strings.Get("Section_Review"), $"{reviews}");
         foreach (var p in review)
-            AddRow(Glyph.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project);
+            AddRow(Glyph.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.HasUnresolvedComments);
 
         var mine = s.PullRequests.Where(p => p.IsMine).Take(3).ToList();
         if (mine.Count > 0) AddHeader(Strings.Get("Section_MyPrs"), null);
         foreach (var p in mine)
-            AddRow(Glyph.Pr, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project);
+            AddRow(Glyph.Pr, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project, p.HasUnresolvedComments);
 
         if (_list.Children.Count == 0)
             _list.Children.Add(new TextBlock { Text = s.Error ?? Strings.Get("Popup_Nothing"), Margin = new Thickness(8), TextWrapping = TextWrapping.Wrap, Opacity = 0.7 });
@@ -151,7 +151,7 @@ public sealed class TrayPopupWindow : Window
         _list.Children.Add(tb);
     }
 
-    private void AddRow((string Glyph, Windows.UI.Color Color) icon, string title, string subtitle, string time, string url, string tooltip)
+    private void AddRow((string Glyph, Windows.UI.Color Color) icon, string title, string subtitle, string time, string url, string tooltip, bool showCommentsIcon = false)
     {
         var grid = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Stretch };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -172,7 +172,23 @@ public sealed class TrayPopupWindow : Window
         Grid.SetColumn(texts, 1);
         grid.Children.Add(texts);
 
-        var t = new TextBlock { Text = time, FontSize = 12, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center };
+        UIElement t;
+        if (showCommentsIcon)
+        {
+            var commentsIcon = new FontIcon
+            {
+                Glyph = Glyph.Comments.Item1,
+                FontSize = 16,
+                Foreground = new SolidColorBrush(Glyph.Comments.Item2),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            ToolTipService.SetToolTip(commentsIcon, Strings.Get("Popup_UnresolvedComments"));
+            t = commentsIcon;
+        }
+        else
+        {
+            t = new TextBlock { Text = time, FontSize = 12, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center };
+        }
         Grid.SetColumn(t, 2);
         grid.Children.Add(t);
 
@@ -204,6 +220,7 @@ public sealed class TrayPopupWindow : Window
         public static readonly (string, Windows.UI.Color) Other = ("\uE91F", Windows.UI.Color.FromArgb(255, 150, 150, 150));
         public static readonly (string, Windows.UI.Color) Review = ("\uE8F4", Windows.UI.Color.FromArgb(255, 241, 196, 15));
         public static readonly (string, Windows.UI.Color) Pr = ("\uE8F4", Windows.UI.Color.FromArgb(255, 150, 150, 150));
+        public static readonly (string, Windows.UI.Color) Comments = ("\uE8BD", Windows.UI.Color.FromArgb(255, 241, 150, 15));
     }
 
     private static (string, Windows.UI.Color) BuildGlyph(BuildInfo b) =>
