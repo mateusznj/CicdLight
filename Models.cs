@@ -31,6 +31,7 @@ public record Snapshot(
     IReadOnlyList<ReleaseInfo>? ReleaseList = null)
 {
     public IReadOnlyList<ReleaseInfo> Releases => ReleaseList ?? [];
+    public int PullRequestsToRevise => PullRequests.Count(p => p.HasUnresolvedComments);
 
     public static Snapshot Empty(string? error = null) => new([], [], error);
 

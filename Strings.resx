@@ -5,8 +5,8 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Tray_NotConfigured" xml:space="preserve"><value>Not configured</value></data>
-  <data name="Status_Summary" xml:space="preserve"><value>{0} failed, {1} to review</value></data>
-  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: {0} failed, {1} to review</value></data>
+  <data name="Status_Summary" xml:space="preserve"><value>{0} failed, {1} to review, {2} PRs to revise</value></data>
+  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: {0} failed, {1} to review, {2} PRs to revise</value></data>
   <data name="Tooltip_Error" xml:space="preserve"><value>CicdLight: {0}</value></data>
   <data name="Toast_BuildFailed" xml:space="preserve"><value>Build failed: {0}</value></data>
   <data name="Toast_BuildFailedText" xml:space="preserve"><value>{0} #{1} ({2})</value></data>

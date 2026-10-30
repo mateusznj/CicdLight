@@ -117,7 +117,7 @@ public sealed class TrayPopupWindow : Window
     {
         var failed = s.Builds.Count(b => b.IsFailed && !b.IsRunning);
         var reviews = s.PullRequests.Count(p => p.NeedsMyReview);
-        _status.Text = s.Error ?? Strings.Format("Status_Summary", failed, reviews);
+        _status.Text = s.Error ?? Strings.Format("Status_Summary", failed, reviews, s.PullRequestsToRevise);
 
         _list.Children.Clear();
 

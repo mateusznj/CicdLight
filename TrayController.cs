@@ -142,7 +142,7 @@ public sealed class TrayController : IDisposable
         var reviews = _snapshot.PullRequests.Count(p => p.NeedsMyReview);
         var text = _snapshot.Error != null
             ? Strings.Format("Tooltip_Error", _snapshot.Error)
-            : Strings.Format("Tooltip_Summary", failed, reviews);
+            : Strings.Format("Tooltip_Summary", failed, reviews, _snapshot.PullRequestsToRevise);
         _tray.ToolTipText = text.Length > 127 ? text[..127] : text;
         if (_popup.IsVisible) _popup.Render(_snapshot);
     }
