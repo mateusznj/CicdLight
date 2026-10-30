@@ -61,7 +61,10 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 
 - `Build (Read)`
 - `Code (Read)`
-- `Project and Team (Read)`
+- `Release (Read)`
+- `Project and Team (Read)` — potrzebne, gdy lista projektów w ustawieniach jest pusta.
+
+`Work Items` nie jest wymagane.
 
 ### Planowane możliwości
 
@@ -111,7 +114,10 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 
 - `Build (Read)`
 - `Code (Read)`
-- `Project and Team (Read)`
+- `Release (Read)`
+- `Project and Team (Read)` — required when the project list in settings is empty.
+
+`Work Items` is not required.
 
 ### Roadmap ideas
 
