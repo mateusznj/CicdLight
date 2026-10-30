@@ -62,6 +62,7 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 - `Build (Read)`
 - `Code (Read)`
 - `Project and Team (Read)`
+- `Release (Read)`
 
 ### Planowane możliwości
 
@@ -112,6 +113,7 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 - `Build (Read)`
 - `Code (Read)`
 - `Project and Team (Read)`
+- `Release (Read)`
 
 ### Roadmap ideas
 
