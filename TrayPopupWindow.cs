@@ -172,7 +172,6 @@ public sealed class TrayPopupWindow : Window
         Grid.SetColumn(texts, 1);
         grid.Children.Add(texts);
 
-        UIElement t;
         if (showCommentsIcon)
         {
             var commentsIcon = new FontIcon
@@ -183,14 +182,15 @@ public sealed class TrayPopupWindow : Window
                 VerticalAlignment = VerticalAlignment.Center
             };
             ToolTipService.SetToolTip(commentsIcon, Strings.Get("Popup_UnresolvedComments"));
-            t = commentsIcon;
+            Grid.SetColumn(commentsIcon, 2);
+            grid.Children.Add(commentsIcon);
         }
         else
         {
-            t = new TextBlock { Text = time, FontSize = 12, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center };
+            var timeText = new TextBlock { Text = time, FontSize = 12, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(timeText, 2);
+            grid.Children.Add(timeText);
         }
-        Grid.SetColumn(t, 2);
-        grid.Children.Add(t);
 
         var btn = new Button
         {
