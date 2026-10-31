@@ -66,10 +66,9 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 
 - `Build (Read)`
 - `Code (Read)`
+
 - `Release (Read)`
 - `Project and Team (Read)` — potrzebne, gdy lista projektów w ustawieniach jest pusta.
-
-`Work Items` nie jest wymagane.
 
 ### Planowane możliwości
 
