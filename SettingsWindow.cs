@@ -17,6 +17,8 @@ public sealed class SettingsWindow : Window
     private readonly TextBlock _targetLabel = new();
     private readonly TextBlock _projectLabel = new();
     private readonly TextBlock _credentialLabel = new();
+    private readonly Button _saveConnection = new();
+    private readonly Button _cancelEditConnection = new();
     private readonly StackPanel _connectionsPage = new() { Spacing = 12, Padding = new Thickness(20) };
     private readonly StackPanel _generalPage = new() { Spacing = 10, Padding = new Thickness(20) };
     private readonly Grid _pageHost = new();
@@ -28,6 +30,7 @@ public sealed class SettingsWindow : Window
     private AppSettings _s;
     private readonly Action _onSaved;
     private readonly Action<IntegrationConnection> _onChoosePipelines;
+    private string? _editingConnectionId;
 
     public SettingsWindow(AppSettings settings, Action onSaved, Action<IntegrationConnection> onChoosePipelines)
     {
@@ -65,39 +68,50 @@ public sealed class SettingsWindow : Window
         _generalPage.Children.Add(_mine);
         _generalPage.Children.Add(_startup);
 
-        var connectionsNav = new Button { Content = Strings.Get("Settings_Connections"), HorizontalAlignment = HorizontalAlignment.Stretch };
-        var generalNav = new Button { Content = Strings.Get("Settings_General"), HorizontalAlignment = HorizontalAlignment.Stretch };
-        connectionsNav.Click += (_, _) => ShowPage(_connectionsPage);
-        generalNav.Click += (_, _) => ShowPage(_generalPage);
-        var navigation = new StackPanel
-        {
-            Spacing = 4,
-            Padding = new Thickness(12),
-            Children = { connectionsNav, generalNav }
-        };
-
         var saveButtons = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 8,
+            Margin = new Thickness(12, 12, 20, 18),
             HorizontalAlignment = HorizontalAlignment.Right,
             Children = { save, cancel }
         };
-        var root = new Grid { ColumnSpacing = 4 };
-        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
-        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        Grid.SetRowSpan(navigation, 2);
-        root.Children.Add(navigation);
-        Grid.SetColumn(_pageHost, 1);
-        root.Children.Add(_pageHost);
-        Grid.SetColumn(saveButtons, 1);
+        var content = new Grid();
+        content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.Children.Add(_pageHost);
         Grid.SetRow(saveButtons, 1);
-        root.Children.Add(saveButtons);
+        content.Children.Add(saveButtons);
+
+        var navigation = new NavigationView
+        {
+            PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
+            IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed,
+            IsPaneToggleButtonVisible = false,
+            IsSettingsVisible = false,
+            Content = content
+        };
+        navigation.MenuItems.Add(new NavigationViewItem
+        {
+            Content = Strings.Get("Settings_Connections"),
+            Icon = new FontIcon { Glyph = "\uE8B7" },
+            Tag = "connections"
+        });
+        navigation.MenuItems.Add(new NavigationViewItem
+        {
+            Content = Strings.Get("Settings_General"),
+            Icon = new FontIcon { Glyph = "\uE713" },
+            Tag = "general"
+        });
+        navigation.SelectionChanged += (_, e) =>
+        {
+            if (e.SelectedItem is not NavigationViewItem item) return;
+            ShowPage(item.Tag as string == "general" ? _generalPage : _connectionsPage);
+        };
+        navigation.SelectedItem = navigation.MenuItems[0];
         ShowPage(_connectionsPage);
-        Content = root;
-        root.Loaded += (_, _) => FitHeight(root);
+        Content = navigation;
+        navigation.Loaded += (_, _) => FitHeight(navigation);
     }
 
     /// <summary>Dopasowuje wysokość okna do zawartości (ogranicza do obszaru roboczego ekranu).</summary>
@@ -133,18 +147,27 @@ public sealed class SettingsWindow : Window
         form.Children.Add(_projectField);
         form.Children.Add(LabeledDynamicCredential());
 
-        var add = new Button { Content = Strings.Get("Button_AddConnection"), MinWidth = 140 };
-        add.Click += (_, _) => AddConnection();
+        _saveConnection.Content = Strings.Get("Button_AddConnection");
+        _saveConnection.MinWidth = 140;
+        _cancelEditConnection.Content = Strings.Get("Button_CancelEdit");
+        _cancelEditConnection.Visibility = Visibility.Collapsed;
+        _saveConnection.Click += (_, _) => SaveConnection();
+        _cancelEditConnection.Click += (_, _) => ResetConnectionForm();
         _target.KeyDown += (_, e) =>
         {
             if (e.Key == Windows.System.VirtualKey.Enter)
             {
-                AddConnection();
+                SaveConnection();
                 e.Handled = true;
             }
         };
         form.Children.Add(_connectionError);
-        form.Children.Add(add);
+        form.Children.Add(new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Children = { _saveConnection, _cancelEditConnection }
+        });
         return form;
     }
 
@@ -165,13 +188,14 @@ public sealed class SettingsWindow : Window
         _credential.PlaceholderText = isAzure ? "" : Strings.Get("Connection_GitHubTokenOptional");
     }
 
-    private void AddConnection()
+    private void SaveConnection()
     {
         var isAzure = _provider.SelectedIndex == 0;
         var target = _target.Text.Trim().TrimEnd('/');
         var project = _project.Text.Trim();
         var credential = _credential.Password.Trim();
-        if (target.Length == 0 || (isAzure && (project.Length == 0 || credential.Length == 0)))
+        var existing = _s.Connections.FirstOrDefault(connection => connection.Id == _editingConnectionId);
+        if (target.Length == 0 || (isAzure && (project.Length == 0 || (credential.Length == 0 && existing == null))))
         {
             _connectionError.Text = Strings.Get("Connection_RequiredFields");
             return;
@@ -180,6 +204,7 @@ public sealed class SettingsWindow : Window
         if (isAzure)
         {
             if (_s.Connections.Any(connection => connection.Provider == IntegrationProvider.AzureDevOps &&
+                connection.Id != _editingConnectionId &&
                 connection.Organization.Equals(target, StringComparison.OrdinalIgnoreCase) &&
                 connection.Project.Equals(project, StringComparison.OrdinalIgnoreCase)))
             {
@@ -193,6 +218,7 @@ public sealed class SettingsWindow : Window
             {
                 var canonicalUrl = GitHubActionsClient.GetRepositoryUrl(target);
                 if (_s.Connections.Any(connection => connection.Provider == IntegrationProvider.GitHub &&
+                    connection.Id != _editingConnectionId &&
                     string.Equals(GitHubActionsClient.GetRepositoryUrl(connection.Repository), canonicalUrl, StringComparison.OrdinalIgnoreCase)))
                 {
                     _connectionError.Text = Strings.Get("Connection_AlreadyExists");
@@ -206,19 +232,19 @@ public sealed class SettingsWindow : Window
             }
         }
 
-        var connection = new IntegrationConnection
+        var connection = existing ?? new IntegrationConnection();
+        connection.Provider = isAzure ? IntegrationProvider.AzureDevOps : IntegrationProvider.GitHub;
+        connection.Organization = isAzure ? target : "";
+        connection.Project = isAzure ? project : "";
+        connection.Repository = isAzure ? "" : target;
+        if (!string.IsNullOrEmpty(credential)) connection.Credential = credential;
+        if (existing == null)
         {
-            Provider = isAzure ? IntegrationProvider.AzureDevOps : IntegrationProvider.GitHub,
-            Organization = isAzure ? target : "",
-            Project = isAzure ? project : "",
-            Repository = isAzure ? "" : target
-        };
-        connection.Credential = credential;
-        _s.Connections.Add(connection);
-        _target.Text = "";
-        _project.Text = "";
-        _credential.Password = "";
+            connection.Credential = credential;
+            _s.Connections.Add(connection);
+        }
         _connectionError.Text = "";
+        ResetConnectionForm();
         Apply();
         _s.Save();
         RenderConnections();
@@ -247,6 +273,8 @@ public sealed class SettingsWindow : Window
                 _onSaved();
                 _onChoosePipelines(connection);
             };
+            var edit = new Button { Content = Strings.Get("Button_Edit") };
+            edit.Click += (_, _) => BeginEditConnection(connection);
             var remove = new Button
             {
                 Content = new FontIcon { Glyph = "\uE74D", FontSize = 14 },
@@ -262,14 +290,17 @@ public sealed class SettingsWindow : Window
                 RenderConnections();
                 _onSaved();
             };
-            var row = new Grid { ColumnSpacing = 8, Padding = new Thickness(0, 6, 0, 6) };
+            var row = new Grid { ColumnSpacing = 8, Padding = new Thickness(0, 8, 8, 8) };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.Children.Add(texts);
             Grid.SetColumn(pipelines, 1);
             row.Children.Add(pipelines);
-            Grid.SetColumn(remove, 2);
+            Grid.SetColumn(edit, 2);
+            row.Children.Add(edit);
+            Grid.SetColumn(remove, 3);
             row.Children.Add(remove);
             _connections.Children.Add(row);
         }
@@ -283,6 +314,33 @@ public sealed class SettingsWindow : Window
     {
         _s = settings;
         RenderConnections();
+    }
+
+    private void BeginEditConnection(IntegrationConnection connection)
+    {
+        _editingConnectionId = connection.Id;
+        _provider.SelectedIndex = connection.Provider == IntegrationProvider.AzureDevOps ? 0 : 1;
+        _provider.IsEnabled = false;
+        _target.Text = connection.Provider == IntegrationProvider.AzureDevOps ? connection.Organization : connection.Repository;
+        _project.Text = connection.Project;
+        _credential.Password = "";
+        _credential.PlaceholderText = Strings.Get("Connection_LeaveCredentialEmpty");
+        _saveConnection.Content = Strings.Get("Button_UpdateConnection");
+        _cancelEditConnection.Visibility = Visibility.Visible;
+        _connectionError.Text = "";
+        ShowPage(_connectionsPage);
+    }
+
+    private void ResetConnectionForm()
+    {
+        _editingConnectionId = null;
+        _provider.IsEnabled = true;
+        _target.Text = "";
+        _project.Text = "";
+        _credential.Password = "";
+        _credential.PlaceholderText = _provider.SelectedIndex == 0 ? "" : Strings.Get("Connection_GitHubTokenOptional");
+        _saveConnection.Content = Strings.Get("Button_AddConnection");
+        _cancelEditConnection.Visibility = Visibility.Collapsed;
     }
 
     private void Apply()

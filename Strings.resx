@@ -50,11 +50,15 @@
   <data name="Connection_AzurePat" xml:space="preserve"><value>Personal Access Token</value></data>
   <data name="Connection_GitHubToken" xml:space="preserve"><value>GitHub token</value></data>
   <data name="Connection_GitHubTokenOptional" xml:space="preserve"><value>Optional for public repositories</value></data>
+  <data name="Connection_LeaveCredentialEmpty" xml:space="preserve"><value>Leave empty to keep the current token</value></data>
   <data name="Connection_RequiredFields" xml:space="preserve"><value>Complete the required connection fields.</value></data>
   <data name="Connection_AlreadyExists" xml:space="preserve"><value>This connection is already in the list.</value></data>
   <data name="Connection_Configured" xml:space="preserve"><value>Configured</value></data>
   <data name="Connection_Pipelines" xml:space="preserve"><value>Choose pipelines</value></data>
   <data name="Button_AddConnection" xml:space="preserve"><value>Add connection</value></data>
+  <data name="Button_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Button_UpdateConnection" xml:space="preserve"><value>Save changes</value></data>
+  <data name="Button_CancelEdit" xml:space="preserve"><value>Cancel edit</value></data>
   <data name="Settings_Org" xml:space="preserve"><value>Organization (name or URL)</value></data>
   <data name="Settings_Projects" xml:space="preserve"><value>Azure DevOps projects (empty = all)</value></data>
   <data name="Settings_AzureProjects" xml:space="preserve"><value>Azure DevOps projects (empty = all)</value></data>
