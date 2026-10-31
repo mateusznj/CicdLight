@@ -3,8 +3,8 @@
 
   # CicdLight
 
-  **Lekki monitor Azure DevOps CI/CD w zasobniku systemowym Windows.**  
-  **A lightweight Azure DevOps CI/CD monitor for the Windows system tray.**
+  **Lekki monitor Azure DevOps i GitHub Actions w zasobniku systemowym Windows.**  
+  **A lightweight Azure DevOps and GitHub Actions monitor for the Windows system tray.**
 
   .NET 10 · WinUI 3 · Windows App SDK · H.NotifyIcon
 
@@ -21,7 +21,7 @@
 
 ## 🇵🇱 Polski
 
-CicdLight to niewielka aplikacja, która pozwala śledzić status pipeline'ów, wydań i pull requestów w Azure DevOps bez ciągłego otwierania przeglądarki.
+CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull requesty w Azure DevOps oraz uruchomienia workflowów GitHub Actions bez ciągłego otwierania przeglądarki.
 
 ### Funkcje
 
@@ -78,7 +78,7 @@ Obsługa kolejnych scenariuszy release pipelines, work items oraz Azure Resource
 
 ## 🇬🇧 English
 
-CicdLight is a small Windows system tray application that keeps Azure DevOps pipelines, releases and pull requests in view without requiring you to constantly check the browser.
+CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps builds and pull requests alongside GitHub Actions workflow runs.
 
 ### Features
 
