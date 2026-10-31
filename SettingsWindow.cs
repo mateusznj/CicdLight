@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Text.Json;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -13,11 +16,13 @@ public sealed class SettingsWindow : Window
     private readonly StackPanel _generalPage = new() { Spacing = 10, Padding = new Thickness(20) };
     private readonly StackPanel _pipelinePage = new() { Spacing = 12, Padding = new Thickness(20) };
     private readonly StackPanel _pipelineHubPage = new() { Spacing = 8, Padding = new Thickness(20) };
+    private readonly StackPanel _aboutPage = new() { Spacing = 12, Padding = new Thickness(20) };
     private readonly Grid _pageHost = new();
     private readonly ScrollViewer _connectionsScroll = new();
     private readonly ScrollViewer _generalScroll = new() { Visibility = Visibility.Collapsed };
     private readonly ScrollViewer _pipelineScroll = new() { Visibility = Visibility.Collapsed };
     private readonly ScrollViewer _pipelineHubScroll = new() { Visibility = Visibility.Collapsed };
+    private readonly ScrollViewer _aboutScroll = new() { Visibility = Visibility.Collapsed };
     private StackPanel? _settingsFooter;
     private readonly NumberBox _poll = new() { Minimum = 15, Maximum = 3600, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = 15, MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };
@@ -64,6 +69,29 @@ public sealed class SettingsWindow : Window
         _generalPage.Children.Add(_notify);
         _generalPage.Children.Add(_mine);
         _generalPage.Children.Add(_startup);
+        _aboutPage.Children.Add(new TextBlock
+        {
+            Text = Strings.Get("About_Title"),
+            FontSize = 20,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+        });
+        _aboutPage.Children.Add(new TextBlock
+        {
+            Text = Strings.Format("About_CurrentVersion", GetCurrentVersion()),
+            TextWrapping = TextWrapping.Wrap
+        });
+        var openRepository = new Button { Content = Strings.Get("About_OpenRepository") };
+        openRepository.Click += (_, _) => OpenUrl("https://github.com/mateusznj/CicdLight");
+        _aboutPage.Children.Add(openRepository);
+        _aboutPage.Children.Add(new TextBlock
+        {
+            Text = Strings.Get("About_UpdateSection"),
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Margin = new Thickness(0, 12, 0, 0)
+        });
+        var checkUpdates = new Button { Content = Strings.Get("About_CheckUpdates") };
+        checkUpdates.Click += async (_, _) => await CheckForUpdatesAsync(checkUpdates);
+        _aboutPage.Children.Add(checkUpdates);
 
         _settingsFooter = new StackPanel
         {
@@ -80,10 +108,12 @@ public sealed class SettingsWindow : Window
         _generalScroll.Content = _generalPage;
         _pipelineScroll.Content = _pipelinePage;
         _pipelineHubScroll.Content = _pipelineHubPage;
+        _aboutScroll.Content = _aboutPage;
         _pageHost.Children.Add(_connectionsScroll);
         _pageHost.Children.Add(_generalScroll);
         _pageHost.Children.Add(_pipelineScroll);
         _pageHost.Children.Add(_pipelineHubScroll);
+        _pageHost.Children.Add(_aboutScroll);
         content.Children.Add(_pageHost);
         Grid.SetRow(_settingsFooter, 1);
         content.Children.Add(_settingsFooter);
@@ -100,21 +130,27 @@ public sealed class SettingsWindow : Window
         };
         navigation.MenuItems.Add(new NavigationViewItem
         {
-            Content = Strings.Get("Settings_Connections"),
-            Icon = new FontIcon { Glyph = "\uE8B7" },
-            Tag = "connections"
-        });
-        navigation.MenuItems.Add(new NavigationViewItem
-        {
             Content = Strings.Get("Settings_General"),
             Icon = new FontIcon { Glyph = "\uE713" },
             Tag = "general"
         });
         navigation.MenuItems.Add(new NavigationViewItem
         {
+            Content = Strings.Get("Settings_Connections"),
+            Icon = new FontIcon { Glyph = "\uE8B7" },
+            Tag = "connections"
+        });
+        navigation.MenuItems.Add(new NavigationViewItem
+        {
             Content = Strings.Get("Settings_Pipelines"),
             Icon = new FontIcon { Glyph = "\uE9D9" },
             Tag = "pipelines"
+        });
+        navigation.MenuItems.Add(new NavigationViewItem
+        {
+            Content = Strings.Get("About_Title"),
+            Icon = new FontIcon { Glyph = "\uE946" },
+            Tag = "about"
         });
         navigation.SelectionChanged += (_, e) =>
         {
@@ -123,11 +159,12 @@ public sealed class SettingsWindow : Window
             {
                 "general" => _generalPage,
                 "pipelines" => _pipelineHubPage,
+                "about" => _aboutPage,
                 _ => _connectionsPage
             });
         };
         navigation.SelectedItem = navigation.MenuItems[0];
-        ShowPage(_connectionsPage);
+        ShowPage(_generalPage);
         Content = navigation;
         navigation.Loaded += (_, _) => FitHeight(navigation);
     }
@@ -154,11 +191,95 @@ public sealed class SettingsWindow : Window
         _generalScroll.Visibility = ReferenceEquals(page, _generalPage) ? Visibility.Visible : Visibility.Collapsed;
         _pipelineScroll.Visibility = ReferenceEquals(page, _pipelinePage) ? Visibility.Visible : Visibility.Collapsed;
         _pipelineHubScroll.Visibility = ReferenceEquals(page, _pipelineHubPage) ? Visibility.Visible : Visibility.Collapsed;
+        _aboutScroll.Visibility = ReferenceEquals(page, _aboutPage) ? Visibility.Visible : Visibility.Collapsed;
         if (_settingsFooter != null)
-            _settingsFooter.Visibility = ReferenceEquals(page, _pipelinePage) || ReferenceEquals(page, _pipelineHubPage)
+            _settingsFooter.Visibility = ReferenceEquals(page, _pipelinePage) || ReferenceEquals(page, _pipelineHubPage) || ReferenceEquals(page, _aboutPage)
                 ? Visibility.Collapsed
                 : Visibility.Visible;
     }
+
+    private static string GetCurrentVersion()
+    {
+        var value = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+            ?? "0.0.0";
+        return ParseVersion(value)?.ToString() ?? value;
+    }
+
+    private static Version? ParseVersion(string value)
+    {
+        var normalized = value.Trim().TrimStart('v', 'V');
+        var suffix = normalized.IndexOfAny(['-', '+']);
+        if (suffix >= 0) normalized = normalized[..suffix];
+        return Version.TryParse(normalized, out var version) ? version : null;
+    }
+
+    private async Task CheckForUpdatesAsync(Button checkButton)
+    {
+        checkButton.IsEnabled = false;
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd($"CicdLight/{GetCurrentVersion()}");
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+            using var response = await client.GetAsync("https://api.github.com/repos/mateusznj/CicdLight/releases/latest");
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            using var document = await JsonDocument.ParseAsync(stream);
+
+            var release = document.RootElement;
+            var tag = release.GetProperty("tag_name").GetString() ?? "";
+            var releaseUrl = release.GetProperty("html_url").GetString() ?? "https://github.com/mateusznj/CicdLight/releases";
+            var currentText = GetCurrentVersion();
+            var current = ParseVersion(currentText);
+            var latest = ParseVersion(tag);
+            if (current == null || latest == null)
+                throw new InvalidOperationException(Strings.Get("Update_InvalidVersion"));
+
+            if (latest > current)
+            {
+                var dialog = new ContentDialog
+                {
+                    Title = Strings.Get("Update_AvailableTitle"),
+                    Content = Strings.Format("Update_AvailableText", currentText, tag),
+                    PrimaryButtonText = Strings.Get("Update_OpenRelease"),
+                    CloseButtonText = Strings.Get("Button_Cancel"),
+                    DefaultButton = ContentDialogButton.Primary,
+                    XamlRoot = _aboutPage.XamlRoot
+                };
+                if (await dialog.ShowAsync() == ContentDialogResult.Primary) OpenUrl(releaseUrl);
+            }
+            else
+            {
+                await ShowUpdateMessageAsync(Strings.Get("Update_CurrentTitle"),
+                    Strings.Format("Update_CurrentText", currentText, tag));
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowUpdateMessageAsync(Strings.Get("Update_ErrorTitle"),
+                Strings.Format("Update_ErrorText", ex.Message));
+        }
+        finally
+        {
+            checkButton.IsEnabled = true;
+        }
+    }
+
+    private async Task ShowUpdateMessageAsync(string title, string message)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = message,
+            CloseButtonText = Strings.Get("Button_Cancel"),
+            XamlRoot = _aboutPage.XamlRoot
+        };
+        await dialog.ShowAsync();
+    }
+
+    private static void OpenUrl(string url) =>
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 
     private void RenderPipelineHub()
     {
