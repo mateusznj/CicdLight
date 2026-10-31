@@ -7,14 +7,71 @@ namespace CicdLight;
 public sealed class ChoosePipelinesWindow : Window
 {
     private readonly List<(string Key, CheckBox Box)> _boxes = [];
+    private readonly List<(string Project, CheckBox BuildFailed, CheckBox BuildFixed, CheckBox ReviewRequested)> _notificationBoxes = [];
 
-    public ChoosePipelinesWindow(IReadOnlyList<(string Key, string Project, string Text)> items, ICollection<string> watched, Action<List<string>> onSaved)
+    public ChoosePipelinesWindow(
+        IReadOnlyList<(string Key, string Project, string Text)> items,
+        IReadOnlyList<string> projects,
+        ICollection<string> watched,
+        IReadOnlyDictionary<string, ProjectNotificationSettings> notifications,
+        ProjectNotificationSettings defaults,
+        Action<List<string>, Dictionary<string, ProjectNotificationSettings>> onSaved)
     {
         Title = Strings.Get("Choose_Title");
         WindowIcon.Apply(this);
         AppWindow.Resize(new SizeInt32(560, 620));
 
         var list = new StackPanel { Spacing = 6, Padding = new Thickness(16) };
+        list.Children.Add(new TextBlock
+        {
+            Text = Strings.Get("Choose_Notifications"),
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 4)
+        });
+        var notificationGrid = new Grid { ColumnSpacing = 8, RowSpacing = 4, MinWidth = 500 };
+        notificationGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+        notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var headers = new[]
+        {
+            Strings.Get("Choose_Project"),
+            Strings.Get("Settings_NotifyBuildFailed"),
+            Strings.Get("Settings_NotifyBuildFixed"),
+            Strings.Get("Settings_NotifyReview")
+        };
+        for (var column = 0; column < headers.Length; column++)
+        {
+            var header = new TextBlock { Text = headers[column], FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
+            Grid.SetColumn(header, column);
+            notificationGrid.Children.Add(header);
+        }
+
+        var row = 1;
+        foreach (var project in projects.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(p => p, StringComparer.CurrentCultureIgnoreCase))
+        {
+            notificationGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var current = notifications.FirstOrDefault(pair => string.Equals(pair.Key, project, StringComparison.OrdinalIgnoreCase)).Value ?? defaults;
+            var projectName = new TextBlock { Text = project, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+            Grid.SetRow(projectName, row);
+            notificationGrid.Children.Add(projectName);
+
+            var failed = CreateNotificationBox(notificationGrid, project, headers[1], current.BuildFailed, 1, row);
+            var fixedBuild = CreateNotificationBox(notificationGrid, project, headers[2], current.BuildFixed, 2, row);
+            var review = CreateNotificationBox(notificationGrid, project, headers[3], current.ReviewRequested, 3, row);
+            _notificationBoxes.Add((project, failed, fixedBuild, review));
+            row++;
+        }
+        list.Children.Add(notificationGrid);
+        list.Children.Add(new TextBlock
+        {
+            Text = Strings.Get("Choose_Pipelines"),
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Margin = new Thickness(0, 12, 0, 4)
+        });
+
         foreach (var group in items.GroupBy(i => i.Project).OrderBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase))
         {
             var children = new List<CheckBox>();
@@ -79,8 +136,16 @@ public sealed class ChoosePipelinesWindow : Window
         save.Click += (_, _) =>
         {
             var chosen = _boxes.Where(b => b.Box.IsChecked == true).Select(b => b.Key).ToList();
+            var savedNotifications = new Dictionary<string, ProjectNotificationSettings>(notifications, StringComparer.OrdinalIgnoreCase);
+            foreach (var (project, failed, fixedBuild, review) in _notificationBoxes)
+                savedNotifications[project] = new ProjectNotificationSettings
+                {
+                    BuildFailed = failed.IsChecked == true,
+                    BuildFixed = fixedBuild.IsChecked == true,
+                    ReviewRequested = review.IsChecked == true
+                };
             Close();
-            onSaved(chosen);
+            onSaved(chosen, savedNotifications);
         };
         cancel.Click += (_, _) => Close();
 
@@ -101,5 +166,15 @@ public sealed class ChoosePipelinesWindow : Window
         root.Children.Add(scroll);
         root.Children.Add(buttons);
         Content = root;
+    }
+
+    private static CheckBox CreateNotificationBox(Grid grid, string project, string eventName, bool isChecked, int column, int row)
+    {
+        var box = new CheckBox { IsChecked = isChecked, MinWidth = 36, HorizontalAlignment = HorizontalAlignment.Center };
+        ToolTipService.SetToolTip(box, $"{project}: {eventName}");
+        Grid.SetColumn(box, column);
+        Grid.SetRow(box, row);
+        grid.Children.Add(box);
+        return box;
     }
 }

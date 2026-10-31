@@ -14,10 +14,14 @@ public class AppSettings
     public string EncryptedPat { get; set; } = "";          // DPAPI (current user)
     public int PollSeconds { get; set; } = 60;
     public bool Notifications { get; set; } = true;
+    public bool NotifyBuildFailed { get; set; } = true;
+    public bool NotifyBuildFixed { get; set; } = true;
+    public bool NotifyReviewRequested { get; set; } = true;
     public bool OnlyMyBuilds { get; set; } = false;
     public bool StartWithWindows { get; set; } = false;
     public string Language { get; set; } = "";                 // "" = system, "en", "pl"
     public List<string> WatchedItems { get; set; } = [];   // keys of watched pipelines/releases; empty = all
+    public Dictionary<string, ProjectNotificationSettings> ProjectNotifications { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     [System.Text.Json.Serialization.JsonIgnore]
     public string Pat

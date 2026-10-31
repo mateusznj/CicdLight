@@ -111,14 +111,15 @@ public sealed class TrayController : IDisposable
             {
                 _previousBuilds.TryGetValue(b.Key, out var old);
                 if (old != null && old.Id == b.Id && old.IsRunning == b.IsRunning) continue;
+                var notify = GetProjectNotifications(b.Project);
 
-                if (b.IsFailed)
+                if (b.IsFailed && notify.BuildFailed)
                     Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, NotificationIcon.Error);
-                else if (b.IsSucceeded && old != null && old.IsFailed)
+                else if (b.IsSucceeded && old != null && old.IsFailed && notify.BuildFixed)
                     Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, NotificationIcon.Info);
             }
 
-            foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Id)))
+            foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Id) && GetProjectNotifications(p.Project).ReviewRequested))
                 Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
         }
 
@@ -130,6 +131,18 @@ public sealed class TrayController : IDisposable
     {
         _notificationUrl = url;
         _tray.ShowNotification(title, text, icon);
+    }
+
+    private ProjectNotificationSettings GetProjectNotifications(string project)
+    {
+        var existing = _settings.ProjectNotifications.FirstOrDefault(entry =>
+            string.Equals(entry.Key, project, StringComparison.OrdinalIgnoreCase)).Value;
+        return existing ?? new ProjectNotificationSettings
+        {
+            BuildFailed = _settings.NotifyBuildFailed,
+            BuildFixed = _settings.NotifyBuildFixed,
+            ReviewRequested = _settings.NotifyReviewRequested
+        };
     }
 
     private void Update()
@@ -160,6 +173,8 @@ public sealed class TrayController : IDisposable
         var items = _all.Builds.Select(b => (Key: b.Key, Project: b.Project, Text: b.Definition))
             .Concat(_all.Releases.Select(r => (Key: r.Key, Project: r.Project, Text: r.Definition)))
             .OrderBy(i => i.Project).ThenBy(i => i.Text).ToList();
+        var projects = items.Select(i => i.Project).Concat(_all.PullRequests.Select(p => p.Project))
+            .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(p => p, StringComparer.CurrentCultureIgnoreCase).ToList();
         if (items.Count == 0)
         {
             _tray.ShowNotification("CicdLight", Strings.Get("Toast_NoPipelines"), NotificationIcon.Info);
@@ -167,9 +182,16 @@ public sealed class TrayController : IDisposable
         }
 
         if (_choose != null) { TrayPopupWindow.BringToFront(_choose); return; }
-        _choose = new ChoosePipelinesWindow(items, _settings.WatchedItems, chosen =>
+        _choose = new ChoosePipelinesWindow(items, projects, _settings.WatchedItems, _settings.ProjectNotifications,
+            new ProjectNotificationSettings
+            {
+                BuildFailed = _settings.NotifyBuildFailed,
+                BuildFixed = _settings.NotifyBuildFixed,
+                ReviewRequested = _settings.NotifyReviewRequested
+            }, (chosen, projectNotifications) =>
         {
             _settings.WatchedItems = chosen.Count == items.Count ? [] : chosen;
+            _settings.ProjectNotifications = projectNotifications;
             _settings.Save();
             _snapshot = _all.Filter(_settings.WatchedItems);
             Update();

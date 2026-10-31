@@ -34,7 +34,6 @@ public sealed class SettingsWindow : Window
         _mine.IsChecked = settings.OnlyMyBuilds;
         _startup.IsChecked = settings.StartWithWindows;
         _language.SelectedIndex = settings.Language switch { "en" => 1, "pl" => 2, _ => 0 };
-
         var save = new Button { Content = Strings.Get("Button_Save"), Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
         var cancel = new Button { Content = Strings.Get("Button_Cancel") };
         save.Click += (_, _) => { Apply(); Close(); _onSaved(); };
@@ -89,4 +88,5 @@ public sealed class SettingsWindow : Window
         _s.Save();
         Autostart.Set(_s.StartWithWindows);
     }
+
 }

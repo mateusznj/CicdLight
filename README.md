@@ -27,7 +27,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić status pipeline'ów, 
 
 - **Ikona w zasobniku systemowym (tray):** zielony — OK, niebieski — build w toku, żółty — PR oczekuje na Twoje review, czerwony — nieudany build, szary — błąd lub brak konfiguracji.
 - **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y oczekujące na review oraz Twoje PR-y. Kliknięcie elementu otwiera go w przeglądarce.
-- **Powiadomienia:** nieudany build, naprawiony build i nowe prośby o review.
+- **Powiadomienia systemowe:** globalny wyłącznik oraz checkboxy dla nieudanych i naprawionych buildów oraz nowych próśb o review w tabeli projektów w oknie wyboru pipeline'ów.
 - **Ochrona tokenu PAT:** szyfrowanie DPAPI (`CurrentUser`); ustawienia zapisane w `%APPDATA%\CicdLight\settings.json`.
 - **Integracja z Windows:** opcjonalny autostart oraz uruchamianie tylko jednej instancji.
 
@@ -68,7 +68,7 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 
 ### Planowane możliwości
 
-Obsługa kolejnych scenariuszy release pipelines, work items, Azure Resource Health (ARM API) oraz logowanie Entra ID (MSAL) zamiast PAT.
+Obsługa kolejnych scenariuszy release pipelines, work items oraz Azure Resource Health (ARM API).
 
 ---
 
@@ -80,7 +80,7 @@ CicdLight is a small Windows system tray application that keeps Azure DevOps pip
 
 - **System tray status:** green — OK, blue — build in progress, yellow — PR awaiting your review, red — failed build, gray — error or missing configuration.
 - **At-a-glance overview:** recent builds (pipeline + branch), releases, PRs awaiting review and your own PRs. Click an item to open it in the browser.
-- **Notifications:** failed builds, recovered builds and new review requests.
+- **System notifications:** a global switch and per-project checkboxes for failed and recovered builds and new review requests in the pipeline selection window.
 - **PAT protection:** Windows DPAPI encryption (`CurrentUser`); settings stored in `%APPDATA%\CicdLight\settings.json`.
 - **Windows integration:** optional startup with Windows and single-instance execution.
 
@@ -121,4 +121,4 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 
 ### Roadmap ideas
 
-Additional release pipeline scenarios, work items, Azure Resource Health (ARM API), and Entra ID (MSAL) sign-in instead of PAT.
+Additional release pipeline scenarios, work items, and Azure Resource Health (ARM API).

@@ -2,6 +2,13 @@ namespace CicdLight;
 
 public enum Health { Unknown, Ok, Running, Warning, Failed }
 
+public sealed class ProjectNotificationSettings
+{
+    public bool BuildFailed { get; set; } = true;
+    public bool BuildFixed { get; set; } = true;
+    public bool ReviewRequested { get; set; } = true;
+}
+
 public record BuildInfo(
     int Id, string Project, string Definition, string Branch, string BuildNumber,
     string Status, string? Result, string RequestedFor, string Url, DateTimeOffset? Time = null)

@@ -35,6 +35,12 @@
   <data name="Settings_Org" xml:space="preserve"><value>Organization (name or URL)</value></data>
   <data name="Settings_Projects" xml:space="preserve"><value>Projects (comma separated, empty = all)</value></data>
   <data name="Settings_Pat" xml:space="preserve"><value>Personal Access Token</value></data>
+  <data name="Settings_NotifyBuildFailed" xml:space="preserve"><value>Failed builds</value></data>
+  <data name="Settings_NotifyBuildFixed" xml:space="preserve"><value>Recovered builds</value></data>
+  <data name="Settings_NotifyReview" xml:space="preserve"><value>New review requests</value></data>
+  <data name="Choose_Notifications" xml:space="preserve"><value>Project notifications</value></data>
+  <data name="Choose_Project" xml:space="preserve"><value>Project</value></data>
+  <data name="Choose_Pipelines" xml:space="preserve"><value>Pipelines and releases</value></data>
   <data name="Settings_Poll" xml:space="preserve"><value>Refresh every (seconds)</value></data>
   <data name="Settings_Notify" xml:space="preserve"><value>Show notifications</value></data>
   <data name="Settings_Mine" xml:space="preserve"><value>Only builds requested by me</value></data>
@@ -44,5 +50,5 @@
   <data name="Button_Save" xml:space="preserve"><value>Save</value></data>  <data name="Button_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Choose_Title" xml:space="preserve"><value>CicdLight - Choose pipelines</value></data>
   <data name="Error_Auth" xml:space="preserve"><value>Authorization failed - check the PAT and its scopes.</value></data>
-  <data name="Error_Html" xml:space="preserve"><value>Unexpected HTML response - check organization name and PAT.</value></data>
+  <data name="Error_Html" xml:space="preserve"><value>Unexpected HTML response - check the organization name and PAT.</value></data>
 </root>

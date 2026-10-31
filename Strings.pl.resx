@@ -35,6 +35,12 @@
   <data name="Settings_Org" xml:space="preserve"><value>Organizacja (nazwa lub URL)</value></data>
   <data name="Settings_Projects" xml:space="preserve"><value>Projekty (po przecinku, puste = wszystkie)</value></data>
   <data name="Settings_Pat" xml:space="preserve"><value>Personal Access Token</value></data>
+  <data name="Settings_NotifyBuildFailed" xml:space="preserve"><value>Nieudane buildy</value></data>
+  <data name="Settings_NotifyBuildFixed" xml:space="preserve"><value>Naprawione buildy</value></data>
+  <data name="Settings_NotifyReview" xml:space="preserve"><value>Nowe prośby o review</value></data>
+  <data name="Choose_Notifications" xml:space="preserve"><value>Powiadomienia projektu</value></data>
+  <data name="Choose_Project" xml:space="preserve"><value>Projekt</value></data>
+  <data name="Choose_Pipelines" xml:space="preserve"><value>Pipeline'y i releasy</value></data>
   <data name="Settings_Poll" xml:space="preserve"><value>Odświeżaj co (sekundy)</value></data>
   <data name="Settings_Notify" xml:space="preserve"><value>Pokazuj powiadomienia</value></data>
   <data name="Settings_Mine" xml:space="preserve"><value>Tylko buildy uruchomione przeze mnie</value></data>
