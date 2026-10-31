@@ -5,8 +5,10 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Tray_NotConfigured" xml:space="preserve"><value>Not configured</value></data>
-  <data name="Status_Summary" xml:space="preserve"><value>{0} failed, {1} to review</value></data>
-  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: {0} failed, {1} to review</value></data>
+  <data name="Tray_ConnectionErrors" xml:space="preserve"><value>{0} connection(s) need attention. Open Settings for details.</value></data>
+  <data name="Tray_ConnectionErrorShort" xml:space="preserve"><value>Connection issue. Open Settings for details.</value></data>
+  <data name="Status_Summary" xml:space="preserve"><value>{0} failed, {1} to review, {2} PRs to revise</value></data>
+  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: {0} failed, {1} to review, {2} PRs to revise</value></data>
   <data name="Tooltip_Error" xml:space="preserve"><value>CicdLight: {0}</value></data>
   <data name="Toast_BuildFailed" xml:space="preserve"><value>Build failed: {0}</value></data>
   <data name="Toast_BuildFailedText" xml:space="preserve"><value>{0} #{1} ({2})</value></data>
@@ -16,6 +18,7 @@
   <data name="Toast_ReviewText" xml:space="preserve"><value>#{0} {1} - {2}</value></data>
   <data name="Toast_NoPipelines" xml:space="preserve"><value>No pipelines loaded yet. Check the settings and refresh first.</value></data>
   <data name="Popup_Refresh" xml:space="preserve"><value>Refresh now</value></data>
+  <data name="Popup_UnresolvedComments" xml:space="preserve"><value>Unresolved comments</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>Settings...</value></data>
   <data name="Menu_Choose" xml:space="preserve"><value>Choose pipelines...</value></data>
   <data name="Menu_OpenOrg" xml:space="preserve"><value>Open Azure DevOps</value></data>
@@ -31,9 +34,66 @@
   <data name="Ago_Hour" xml:space="preserve"><value>{0} h ago</value></data>
   <data name="Ago_Day" xml:space="preserve"><value>{0} d ago</value></data>
   <data name="Settings_Title" xml:space="preserve"><value>CicdLight - Settings</value></data>
+  <data name="Settings_Connections" xml:space="preserve"><value>Connections</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_Pipelines" xml:space="preserve"><value>Pipelines</value></data>
+  <data name="About_Title" xml:space="preserve"><value>About</value></data>
+  <data name="About_CurrentVersion" xml:space="preserve"><value>Current version: {0}</value></data>
+  <data name="About_OpenRepository" xml:space="preserve"><value>Open project on GitHub</value></data>
+  <data name="About_UpdateSection" xml:space="preserve"><value>Updates</value></data>
+  <data name="About_CheckUpdates" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="Update_AvailableTitle" xml:space="preserve"><value>Update available</value></data>
+  <data name="Update_AvailableText" xml:space="preserve"><value>Installed: {0}. Latest release: {1}.</value></data>
+  <data name="Update_OpenRelease" xml:space="preserve"><value>Open release</value></data>
+  <data name="Update_CurrentTitle" xml:space="preserve"><value>You're up to date</value></data>
+  <data name="Update_CurrentText" xml:space="preserve"><value>Installed: {0}. Latest release: {1}.</value></data>
+  <data name="Update_ErrorTitle" xml:space="preserve"><value>Update check failed</value></data>
+  <data name="Update_ErrorText" xml:space="preserve"><value>{0}</value></data>
+  <data name="Update_InvalidVersion" xml:space="preserve"><value>The app or release version is not a valid semantic version.</value></data>
+  <data name="Connections_Title" xml:space="preserve"><value>Connections</value></data>
+  <data name="Connection_AddTitle" xml:space="preserve"><value>Add connection</value></data>
+  <data name="Connection_EditTitle" xml:space="preserve"><value>Edit connection</value></data>
+  <data name="Connection_DeleteTitle" xml:space="preserve"><value>Remove connection?</value></data>
+  <data name="Connection_DeleteConfirmation" xml:space="preserve"><value>Remove {0} and its saved pipeline selection?</value></data>
+  <data name="Connections_ListTitle" xml:space="preserve"><value>Connected repositories</value></data>
+  <data name="Connections_Empty" xml:space="preserve"><value>No connections yet.</value></data>
+  <data name="Connection_Provider" xml:space="preserve"><value>Connect to</value></data>
+  <data name="Connection_AzureDevOps" xml:space="preserve"><value>Azure DevOps</value></data>
+  <data name="Connection_GitHub" xml:space="preserve"><value>GitHub</value></data>
+  <data name="Connection_Organization" xml:space="preserve"><value>Organization URL or name</value></data>
+  <data name="Connection_OrganizationPlaceholder" xml:space="preserve"><value>https://dev.azure.com/organization</value></data>
+  <data name="Connection_Project" xml:space="preserve"><value>Project</value></data>
+  <data name="Connection_Repository" xml:space="preserve"><value>Repository</value></data>
+  <data name="Connection_RepositoryPlaceholder" xml:space="preserve"><value>owner/repository or GitHub URL</value></data>
+  <data name="Connection_AzurePat" xml:space="preserve"><value>Personal Access Token</value></data>
+  <data name="Connection_GitHubToken" xml:space="preserve"><value>GitHub token</value></data>
+  <data name="Connection_GitHubTokenOptional" xml:space="preserve"><value>Optional for public repositories</value></data>
+  <data name="Connection_LeaveCredentialEmpty" xml:space="preserve"><value>Leave empty to keep the current token</value></data>
+  <data name="Connection_RequiredFields" xml:space="preserve"><value>Complete the required connection fields.</value></data>
+  <data name="Connection_AlreadyExists" xml:space="preserve"><value>This connection is already in the list.</value></data>
+  <data name="Connection_Configured" xml:space="preserve"><value>Configured</value></data>
+  <data name="Connection_Pipelines" xml:space="preserve"><value>Choose pipelines</value></data>
+  <data name="Pipeline_NoItems" xml:space="preserve"><value>No pipeline runs are available for this connection yet. Refresh and try again.</value></data>
+  <data name="Button_AddConnection" xml:space="preserve"><value>Add connection</value></data>
+  <data name="Button_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Button_UpdateConnection" xml:space="preserve"><value>Save changes</value></data>
+  <data name="Button_CancelEdit" xml:space="preserve"><value>Cancel edit</value></data>
+  <data name="Button_Back" xml:space="preserve"><value>Back to connections</value></data>
   <data name="Settings_Org" xml:space="preserve"><value>Organization (name or URL)</value></data>
-  <data name="Settings_Projects" xml:space="preserve"><value>Projects (comma separated, empty = all)</value></data>
+  <data name="Settings_Projects" xml:space="preserve"><value>Azure DevOps projects (empty = all)</value></data>
+  <data name="Settings_AzureProjects" xml:space="preserve"><value>Azure DevOps projects (empty = all)</value></data>
+  <data name="Settings_AzureProjectPlaceholder" xml:space="preserve"><value>Project name</value></data>
   <data name="Settings_Pat" xml:space="preserve"><value>Personal Access Token</value></data>
+  <data name="Settings_GitHubRepositories" xml:space="preserve"><value>GitHub repositories</value></data>
+  <data name="Settings_GitHubRepositoryPlaceholder" xml:space="preserve"><value>owner/repo or GitHub URL</value></data>
+  <data name="Settings_GitHubToken" xml:space="preserve"><value>GitHub token (optional for public repositories)</value></data>
+  <data name="Settings_InvalidGitHubRepository" xml:space="preserve"><value>Enter a GitHub URL or owner/repository.</value></data>
+  <data name="Settings_NotifyBuildFailed" xml:space="preserve"><value>Failed builds</value></data>
+  <data name="Settings_NotifyBuildFixed" xml:space="preserve"><value>Recovered builds</value></data>
+  <data name="Settings_NotifyReview" xml:space="preserve"><value>New review requests</value></data>
+  <data name="Choose_Notifications" xml:space="preserve"><value>Project notifications</value></data>
+  <data name="Choose_Project" xml:space="preserve"><value>Project</value></data>
+  <data name="Choose_Pipelines" xml:space="preserve"><value>Pipelines and releases</value></data>
   <data name="Settings_Poll" xml:space="preserve"><value>Refresh every (seconds)</value></data>
   <data name="Settings_Notify" xml:space="preserve"><value>Show notifications</value></data>
   <data name="Settings_Mine" xml:space="preserve"><value>Only builds requested by me</value></data>
@@ -41,7 +101,9 @@
   <data name="Settings_Language" xml:space="preserve"><value>Language (applies after restart of windows)</value></data>
   <data name="Language_System" xml:space="preserve"><value>System default</value></data>
   <data name="Button_Save" xml:space="preserve"><value>Save</value></data>  <data name="Button_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Button_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Button_Remove" xml:space="preserve"><value>Remove</value></data>
   <data name="Choose_Title" xml:space="preserve"><value>CicdLight - Choose pipelines</value></data>
   <data name="Error_Auth" xml:space="preserve"><value>Authorization failed - check the PAT and its scopes.</value></data>
-  <data name="Error_Html" xml:space="preserve"><value>Unexpected HTML response - check organization name and PAT.</value></data>
+  <data name="Error_Html" xml:space="preserve"><value>Unexpected HTML response - check the organization name and PAT.</value></data>
 </root>
