@@ -27,7 +27,8 @@ CicdLight to niewielka aplikacja, która pozwala śledzić status pipeline'ów, 
 
 - **Ikona w zasobniku systemowym (tray):** zielony — OK, niebieski — build w toku, żółty — PR oczekuje na Twoje review, czerwony — nieudany build, szary — błąd lub brak konfiguracji.
 - **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y oczekujące na review oraz Twoje PR-y. Kliknięcie elementu otwiera go w przeglądarce.
-- **GitHub Actions:** statusy ostatnich uruchomień z wielu repozytoriów GitHub, wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; token do repozytoriów prywatnych jest szyfrowany DPAPI (`CurrentUser`).
+- **Połączenia:** lista repozytoriów GitHub i projektów Azure DevOps, każde z osobnym kluczem i wyborem obserwowanych pipeline'ów. Sekret jest szyfrowany DPAPI (`CurrentUser`).
+- **GitHub Actions:** statusy ostatnich uruchomień wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; prywatne używają tokenu przypisanego do danego repozytorium.
 - **Powiadomienia systemowe:** globalny wyłącznik oraz checkboxy dla nieudanych i naprawionych buildów oraz nowych próśb o review w tabeli projektów w oknie wyboru pipeline'ów.
 - **Ochrona tokenu PAT:** szyfrowanie DPAPI (`CurrentUser`); ustawienia zapisane w `%APPDATA%\CicdLight\settings.json`.
 - **Integracja z Windows:** opcjonalny autostart oraz uruchamianie tylko jednej instancji.
@@ -36,7 +37,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić status pipeline'ów, 
 
 1. Przejdź do [najnowszego wydania (GitHub Releases)](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Pobierz odpowiedni instalator z sekcji **Assets** i uruchom go.
-3. Uruchom CicdLight i w oknie **Settings** skonfiguruj organizację Azure DevOps oraz token PAT. Projekty Azure DevOps i repozytoria GitHub dodawaj osobno w odpowiednich sekcjach. Repozytorium GitHub podaj jako `owner/repo` lub URL. Pusta lista projektów Azure oznacza wszystkie projekty organizacji.
+3. Uruchom CicdLight i otwórz **Settings**. Wybierz dostawcę, podaj organizację i projekt Azure DevOps wraz z PAT albo repozytorium GitHub wraz z opcjonalnym tokenem. Każde połączenie dodaj osobno, a potem wybierz obserwowane pipeline'y przy tym wpisie.
 
 Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tokena z uprawnieniem **Actions: Read** i dostępem do wybranych repozytoriów. Token dla publicznych repozytoriów jest opcjonalny.
 
@@ -45,7 +46,7 @@ Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tok
 ### Wymagania
 
 - Windows 10 w wersji 1809 (build 17763) lub nowszy.
-- Organizacja Azure DevOps i token PAT z odpowiednimi uprawnieniami.
+- Co najmniej jedno połączenie Azure DevOps (PAT dla danego projektu) lub repozytorium GitHub; prywatne repozytoria wymagają własnego tokenu GitHub.
 - .NET 10 SDK **tylko do budowania aplikacji ze źródeł**.
 
 ### Uruchomienie ze źródeł
@@ -83,7 +84,8 @@ CicdLight is a small Windows system tray application that keeps Azure DevOps pip
 
 - **System tray status:** green — OK, blue — build in progress, yellow — PR awaiting your review, red — failed build, gray — error or missing configuration.
 - **At-a-glance overview:** recent builds (pipeline + branch), releases, PRs awaiting review and your own PRs. Click an item to open it in the browser.
-- **GitHub Actions:** recent workflow runs from multiple GitHub repositories, shown alongside Azure DevOps builds. Public repositories need no token; private-repository tokens are protected with Windows DPAPI (`CurrentUser`).
+- **Connections:** a list of GitHub repositories and Azure DevOps projects, each with its own credential and selected pipelines. Secrets are protected with Windows DPAPI (`CurrentUser`).
+- **GitHub Actions:** recent workflow runs shown alongside Azure DevOps builds. Public repositories need no token; private repositories use a token stored on that repository's connection.
 - **System notifications:** a global switch and per-project checkboxes for failed and recovered builds and new review requests in the pipeline selection window.
 - **PAT protection:** Windows DPAPI encryption (`CurrentUser`); settings stored in `%APPDATA%\CicdLight\settings.json`.
 - **Windows integration:** optional startup with Windows and single-instance execution.
@@ -92,7 +94,7 @@ CicdLight is a small Windows system tray application that keeps Azure DevOps pip
 
 1. Open the [latest GitHub Release](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Download the appropriate installer from **Assets** and run it.
-3. Start CicdLight. In **Settings**, configure your Azure DevOps organization and PAT. Add Azure DevOps projects and GitHub repositories individually in their respective sections. Enter GitHub repositories as `owner/repo` or a URL. An empty Azure project list means all projects in the organization.
+3. Open **Settings** and choose a provider. Add each Azure DevOps organization/project with its PAT or each GitHub repository with its optional token as a separate connection. Then choose the pipelines to monitor from that connection's row.
 
 To read Actions runs in private repositories, use a fine-grained token with **Actions: Read** access to the selected repositories. A token is optional for public repositories.
 
@@ -101,7 +103,7 @@ To read Actions runs in private repositories, use a fine-grained token with **Ac
 ### Requirements
 
 - Windows 10 version 1809 (build 17763) or later.
-- An Azure DevOps organization and a PAT with the required permissions.
+- At least one Azure DevOps project connection (with its PAT) or GitHub repository; private GitHub repositories require a token on that repository's connection.
 - .NET 10 SDK **only if building from source**.
 
 ### Run from source

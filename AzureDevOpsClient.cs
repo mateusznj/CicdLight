@@ -4,29 +4,33 @@ using System.Text.Json;
 
 namespace CicdLight;
 
-public sealed class AzureDevOpsClient : IDisposable
+public sealed class AzureDevOpsClient : IIntegrationClient
 {
     private const string Api = "api-version=7.1";
     private readonly HttpClient _http;
     private readonly AppSettings _s;
+    private readonly IntegrationConnection _connection;
     private string? _userId;
 
-    public AzureDevOpsClient(AppSettings settings)
+    public AzureDevOpsClient(AppSettings settings, IntegrationConnection connection)
     {
         _s = settings;
+        _connection = connection;
         _http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            "Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes(":" + settings.Pat)));
+            "Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes(":" + connection.Credential)));
     }
 
     public async Task<Snapshot> FetchAsync(CancellationToken ct)
     {
         try
         {
-            _userId ??= (await GetAsync($"{_s.OrganizationUrl}/_apis/connectionData", ct))
+            _userId ??= (await GetAsync($"{_connection.OrganizationUrl}/_apis/connectionData", ct))
                 .GetProperty("authenticatedUser").GetProperty("id").GetString();
 
-            var projects = _s.ProjectList.Length > 0 ? _s.ProjectList : await GetProjectsAsync(ct);
+            var projects = string.IsNullOrWhiteSpace(_connection.Project)
+                ? await GetProjectsAsync(ct)
+                : [_connection.Project];
 
             var buildTasks = projects.Select(p => GetBuildsAsync(p, ct)).ToList();
             var releaseTasks = projects.Select(p => GetReleasesAsync(p, ct)).ToList();
@@ -45,7 +49,7 @@ public sealed class AzureDevOpsClient : IDisposable
 
     private async Task<string[]> GetProjectsAsync(CancellationToken ct)
     {
-        var json = await GetAsync($"{_s.OrganizationUrl}/_apis/projects?$top=100&{Api}", ct);
+        var json = await GetAsync($"{_connection.OrganizationUrl}/_apis/projects?$top=100&{Api}", ct);
         return json.GetProperty("value").EnumerateArray().Select(p => p.GetProperty("name").GetString()!).ToArray();
     }
 
@@ -61,7 +65,7 @@ public sealed class AzureDevOpsClient : IDisposable
     // Latest build per definition+branch, newest first.
     private async Task<List<BuildInfo>> GetBuildsAsync(string project, CancellationToken ct)
     {
-        var url = $"{_s.OrganizationUrl}/{Uri.EscapeDataString(project)}/_apis/build/builds" +
+        var url = $"{_connection.OrganizationUrl}/{Uri.EscapeDataString(project)}/_apis/build/builds" +
                   $"?$top=100&queryOrder=queueTimeDescending&{Api}";
         if (_s.OnlyMyBuilds) url += $"&requestedFor={_userId}";
 
@@ -77,7 +81,7 @@ public sealed class AzureDevOpsClient : IDisposable
                 b.TryGetProperty("result", out var r) ? r.GetString() : null,
                 b.TryGetProperty("requestedFor", out var rf) ? rf.GetProperty("displayName").GetString() ?? "" : "",
                 b.GetProperty("_links").GetProperty("web").GetProperty("href").GetString() ?? "",
-                ParseTime(b)))
+                ParseTime(b), _connection.Id))
             .GroupBy(b => b.Key)
             .Select(g => g.First())
             .ToList();
@@ -88,7 +92,7 @@ public sealed class AzureDevOpsClient : IDisposable
     {
         try
         {
-            var vsrm = _s.OrganizationUrl.Replace("https://dev.azure.com", "https://vsrm.dev.azure.com", StringComparison.OrdinalIgnoreCase);
+            var vsrm = _connection.OrganizationUrl.Replace("https://dev.azure.com", "https://vsrm.dev.azure.com", StringComparison.OrdinalIgnoreCase);
             var json = await GetAsync($"{vsrm}/{Uri.EscapeDataString(project)}/_apis/release/deployments?$top=200&queryOrder=descending&{Api}", ct);
 
             var latest = json.GetProperty("value").EnumerateArray()
@@ -108,8 +112,8 @@ public sealed class AzureDevOpsClient : IDisposable
                 var top = g.OrderByDescending(d => d.ReleaseId).First();
                 var failed = g.Any(d => d.Status is "failed" or "partiallySucceeded");
                 var running = g.Any(d => d.Status == "inProgress");
-                var url = $"{_s.OrganizationUrl}/{Uri.EscapeDataString(project)}/_releaseProgress?releaseId={top.ReleaseId}&_a=release-pipeline-progress";
-                return new ReleaseInfo(project, g.Key, top.Release, failed, running, url);
+                var url = $"{_connection.OrganizationUrl}/{Uri.EscapeDataString(project)}/_releaseProgress?releaseId={top.ReleaseId}&_a=release-pipeline-progress";
+                return new ReleaseInfo(project, g.Key, top.Release, failed, running, url, _connection.Id);
             }).ToList();
         }
         catch (HttpRequestException) { return []; }   // project without Releases
@@ -117,12 +121,12 @@ public sealed class AzureDevOpsClient : IDisposable
 
     private async Task<List<PullRequestInfo>> GetPullRequestsAsync(CancellationToken ct)
     {
-        var baseUrl = $"{_s.OrganizationUrl}/_apis/git/pullrequests?searchCriteria.status=active&$top=50&{Api}";
+        var baseUrl = $"{_connection.OrganizationUrl}/_apis/git/pullrequests?searchCriteria.status=active&$top=50&{Api}";
         var mineTask = GetAsync($"{baseUrl}&searchCriteria.creatorId={_userId}", ct);
         var reviewTask = GetAsync($"{baseUrl}&searchCriteria.reviewerId={_userId}", ct);
         await Task.WhenAll(mineTask, reviewTask);
 
-        var filter = _s.ProjectList;
+        string[] filter = string.IsNullOrWhiteSpace(_connection.Project) ? [] : [_connection.Project];
         var result = new Dictionary<int, PullRequestInfo>();
 
         foreach (var pr in reviewTask.Result.GetProperty("value").EnumerateArray())
@@ -159,7 +163,7 @@ public sealed class AzureDevOpsClient : IDisposable
 
     private async Task<bool> HasUnresolvedCommentsAsync(PullRequestInfo pullRequest, CancellationToken ct)
     {
-        var url = $"{_s.OrganizationUrl}/{Uri.EscapeDataString(pullRequest.Project)}/_apis/git/repositories/" +
+        var url = $"{_connection.OrganizationUrl}/{Uri.EscapeDataString(pullRequest.Project)}/_apis/git/repositories/" +
                   $"{Uri.EscapeDataString(pullRequest.RepositoryId)}/pullRequests/{pullRequest.Id}/threads?{Api}";
         try
         {
@@ -184,9 +188,9 @@ public sealed class AzureDevOpsClient : IDisposable
         var project = repo.GetProperty("project").GetProperty("name").GetString() ?? "";
         var repoName = repo.GetProperty("name").GetString() ?? "";
         var id = pr.GetProperty("pullRequestId").GetInt32();
-        var url = $"{_s.OrganizationUrl}/{Uri.EscapeDataString(project)}/_git/{Uri.EscapeDataString(repoName)}/pullrequest/{id}";
+        var url = $"{_connection.OrganizationUrl}/{Uri.EscapeDataString(project)}/_git/{Uri.EscapeDataString(repoName)}/pullrequest/{id}";
         return new PullRequestInfo(id, project, repoName, pr.GetProperty("title").GetString() ?? "",
-            pr.GetProperty("createdBy").GetProperty("displayName").GetString() ?? "", isMine, false, url, repoId);
+            pr.GetProperty("createdBy").GetProperty("displayName").GetString() ?? "", isMine, false, url, repoId, false, _connection.Id);
     }
 
     private async Task<JsonElement> GetAsync(string url, CancellationToken ct)

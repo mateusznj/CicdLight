@@ -16,8 +16,7 @@ public sealed class TrayController : IDisposable
     private readonly TrayPopupWindow _popup;
     private readonly DispatcherQueueTimer _timer;
     private AppSettings _settings = AppSettings.Load();
-    private AzureDevOpsClient? _client;
-    private GitHubActionsClient? _githubClient;
+    private readonly List<(IntegrationConnection Connection, IIntegrationClient Client)> _clients = [];
     private CancellationTokenSource? _cts;
     private Snapshot _snapshot = Snapshot.Empty();
     private Snapshot _all = Snapshot.Empty();
@@ -65,10 +64,18 @@ public sealed class TrayController : IDisposable
     private void ApplySettings()
     {
         Strings.SetLanguage(_settings.Language);
-        _client?.Dispose();
-        _githubClient?.Dispose();
-        _client = _settings.IsAzureDevOpsConfigured ? new AzureDevOpsClient(_settings) : null;
-        _githubClient = _settings.IsGitHubConfigured ? new GitHubActionsClient(_settings) : null;
+        foreach (var client in _clients) client.Client.Dispose();
+        _clients.Clear();
+        foreach (var connection in _settings.Connections)
+        {
+            IIntegrationClient client = connection.Provider switch
+            {
+                IntegrationProvider.AzureDevOps => new AzureDevOpsClient(_settings, connection),
+                IntegrationProvider.GitHub => new GitHubActionsClient(connection),
+                _ => throw new InvalidOperationException($"Unsupported provider: {connection.Provider}")
+            };
+            _clients.Add((connection, client));
+        }
         _previousBuilds = null;
         _previousReviewPrs = null;
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(15, _settings.PollSeconds));
@@ -79,7 +86,7 @@ public sealed class TrayController : IDisposable
     private async Task RefreshAsync()
     {
         if (_refreshing) return;
-        if (_client == null && _githubClient == null)
+        if (_clients.Count == 0)
         {
             _snapshot = Snapshot.Empty(Strings.Get("Tray_NotConfigured"));
             Update();
@@ -91,18 +98,30 @@ public sealed class TrayController : IDisposable
         _cts = new CancellationTokenSource();
         try
         {
-            var requests = new List<Task<Snapshot>>();
-            if (_client != null) requests.Add(_client.FetchAsync(_cts.Token));
-            if (_githubClient != null) requests.Add(_githubClient.FetchAsync(_cts.Token));
-            var snapshots = await Task.WhenAll(requests);
-            var errors = snapshots.Where(snapshot => snapshot.Error != null).Select(snapshot => snapshot.Error!).ToList();
+            var requests = _clients.Select(async entry =>
+            {
+                var snapshot = await entry.Client.FetchAsync(_cts.Token);
+                entry.Connection.LastError = snapshot.Error;
+                return (entry.Connection, Snapshot: snapshot);
+            });
+            var results = await Task.WhenAll(requests);
+            var errors = results.Count(result => result.Snapshot.Error != null);
             _all = new Snapshot(
-                snapshots.SelectMany(snapshot => snapshot.Builds).ToList(),
-                snapshots.SelectMany(snapshot => snapshot.PullRequests).ToList(),
-                errors.Count == 0 ? null : string.Join(" | ", errors),
-                snapshots.SelectMany(snapshot => snapshot.Releases).ToList());
-            _snapshot = _all.Filter(_settings.WatchedItems);
-            if (errors.Count == 0) Notify(_snapshot);
+                results.SelectMany(result => result.Snapshot.Builds).ToList(),
+                results.SelectMany(result => result.Snapshot.PullRequests).ToList(),
+                null,
+                results.SelectMany(result => result.Snapshot.Releases).ToList());
+            _snapshot = new Snapshot(
+                results.SelectMany(result => result.Connection.HasSelection
+                    ? result.Snapshot.Builds.Where(build => result.Connection.SelectedItems.Contains(build.Key))
+                    : result.Snapshot.Builds).ToList(),
+                results.SelectMany(result => result.Snapshot.PullRequests).ToList(),
+                errors == 0 ? null : Strings.Format("Tray_ConnectionErrors", errors),
+                results.SelectMany(result => result.Connection.HasSelection
+                    ? result.Snapshot.Releases.Where(release => result.Connection.SelectedItems.Contains(release.Key))
+                    : result.Snapshot.Releases).ToList());
+            _settingsWindow?.RefreshConnectionStatuses();
+            Notify(_snapshot);
             Update();
         }
         catch (OperationCanceledException) { }
@@ -111,8 +130,6 @@ public sealed class TrayController : IDisposable
 
     private void Notify(Snapshot s)
     {
-        if (s.Error != null) return;
-
         var builds = s.Builds.ToDictionary(b => b.Key);
         var reviewPrs = s.PullRequests.Where(p => p.NeedsMyReview).Select(p => p.Id).ToHashSet();
 
@@ -182,10 +199,23 @@ public sealed class TrayController : IDisposable
 
     private void ChoosePipelines()
     {
-        var items = _all.Builds.Select(b => (Key: b.Key, Project: b.Project, Text: b.Definition))
-            .Concat(_all.Releases.Select(r => (Key: r.Key, Project: r.Project, Text: r.Definition)))
+        if (_settings.Connections.Count == 1)
+        {
+            ChoosePipelines(_settings.Connections[0]);
+            return;
+        }
+        ShowSettings();
+    }
+
+    private void ChoosePipelines(IntegrationConnection connection)
+    {
+        var items = _all.Builds.Where(build => build.ConnectionId == connection.Id)
+            .Select(b => (Key: b.Key, Project: b.Project, Text: b.Definition))
+            .Concat(_all.Releases.Where(release => release.ConnectionId == connection.Id)
+                .Select(r => (Key: r.Key, Project: r.Project, Text: r.Definition)))
             .OrderBy(i => i.Project).ThenBy(i => i.Text).ToList();
-        var projects = items.Select(i => i.Project).Concat(_all.PullRequests.Select(p => p.Project))
+        var projects = items.Select(i => i.Project)
+            .Concat(_all.PullRequests.Where(p => p.ConnectionId == connection.Id).Select(p => p.Project))
             .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(p => p, StringComparer.CurrentCultureIgnoreCase).ToList();
         if (items.Count == 0)
         {
@@ -194,7 +224,7 @@ public sealed class TrayController : IDisposable
         }
 
         if (_choose != null) { TrayPopupWindow.BringToFront(_choose); return; }
-        _choose = new ChoosePipelinesWindow(items, projects, _settings.WatchedItems, _settings.ProjectNotifications,
+        _choose = new ChoosePipelinesWindow(items, projects, connection.HasSelection ? connection.SelectedItems : [], _settings.ProjectNotifications,
             new ProjectNotificationSettings
             {
                 BuildFailed = _settings.NotifyBuildFailed,
@@ -202,11 +232,15 @@ public sealed class TrayController : IDisposable
                 ReviewRequested = _settings.NotifyReviewRequested
             }, (chosen, projectNotifications) =>
         {
-            _settings.WatchedItems = chosen.Count == items.Count ? [] : chosen;
+            var current = _settings.Connections.FirstOrDefault(item => item.Id == connection.Id);
+            if (current != null)
+            {
+                current.SelectedItems = chosen;
+                current.HasSelection = true;
+            }
             _settings.ProjectNotifications = projectNotifications;
             _settings.Save();
-            _snapshot = _all.Filter(_settings.WatchedItems);
-            Update();
+            _ = RefreshAsync();
         });
         _choose.Closed += (_, _) => _choose = null;
         TrayPopupWindow.BringToFront(_choose);
@@ -219,7 +253,8 @@ public sealed class TrayController : IDisposable
         {
             _settings = AppSettings.Load();
             ApplySettings();
-        });
+            _settingsWindow?.UpdateSettings(_settings);
+        }, ChoosePipelines);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         TrayPopupWindow.BringToFront(_settingsWindow);
     }
@@ -232,14 +267,15 @@ public sealed class TrayController : IDisposable
 
     private void OpenDefaultUrl()
     {
-        if (_settings.IsAzureDevOpsConfigured)
+        var azure = _settings.Connections.FirstOrDefault(connection => connection.Provider == IntegrationProvider.AzureDevOps);
+        if (azure != null)
         {
-            OpenUrl(_settings.OrganizationUrl);
+            OpenUrl(azure.OrganizationUrl);
             return;
         }
 
-        if (_settings.GitHubRepositoryList.Length > 0)
-            OpenUrl(GitHubActionsClient.GetRepositoryUrl(_settings.GitHubRepositoryList[0]));
+        var github = _settings.Connections.FirstOrDefault(connection => connection.Provider == IntegrationProvider.GitHub);
+        if (github != null) OpenUrl(GitHubActionsClient.GetRepositoryUrl(github.Repository));
     }
 
     private static Icon MakeIcon(Health health)
@@ -289,8 +325,8 @@ public sealed class TrayController : IDisposable
     {
         _timer.Stop();
         _cts?.Cancel();
-        _client?.Dispose();
-        _githubClient?.Dispose();
+        foreach (var client in _clients) client.Client.Dispose();
+        _clients.Clear();
         _tray.Dispose();
     }
 }

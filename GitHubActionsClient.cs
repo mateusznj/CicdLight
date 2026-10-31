@@ -3,45 +3,30 @@ using System.Text.Json;
 
 namespace CicdLight;
 
-public sealed class GitHubActionsClient : IDisposable
+public sealed class GitHubActionsClient : IIntegrationClient
 {
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
-    private readonly AppSettings _settings;
+    private readonly IntegrationConnection _connection;
 
-    public GitHubActionsClient(AppSettings settings)
+    public GitHubActionsClient(IntegrationConnection connection)
     {
-        _settings = settings;
+        _connection = connection;
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("CicdLight/1.0");
         _http.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-        if (!string.IsNullOrWhiteSpace(settings.GitHubToken))
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", settings.GitHubToken);
+        if (!string.IsNullOrWhiteSpace(connection.Credential))
+            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", connection.Credential);
     }
 
     public async Task<Snapshot> FetchAsync(CancellationToken ct)
     {
-        var requests = _settings.GitHubRepositoryList.Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(async repository =>
-            {
-                try
-                {
-                    return (Builds: await GetRunsAsync(repository, ct), Error: (string?)null);
-                }
-                catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-                catch (Exception ex)
-                {
-                    return (Builds: new List<BuildInfo>(), Error: $"{repository}: {ex.Message}");
-                }
-            });
         try
         {
-            var results = await Task.WhenAll(requests);
-            var errors = results.Where(result => result.Error != null).Select(result => result.Error!).ToList();
-            return new Snapshot(results.SelectMany(result => result.Builds).ToList(), [],
-                errors.Count == 0 ? null : string.Join(" | ", errors));
+            var builds = await GetRunsAsync(_connection.Repository, ct);
+            return new Snapshot(builds, [], null);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (Exception ex) { return Snapshot.Empty(ex.Message); }
+        catch (Exception ex) { return Snapshot.Empty($"{_connection.DisplayName}: {ex.Message}"); }
     }
 
     private async Task<List<BuildInfo>> GetRunsAsync(string repository, CancellationToken ct)
@@ -59,7 +44,7 @@ public sealed class GitHubActionsClient : IDisposable
             .ToList();
     }
 
-    private static BuildInfo ToBuild(string repository, JsonElement run)
+    private BuildInfo ToBuild(string repository, JsonElement run)
     {
         var status = run.GetProperty("status").GetString() switch
         {
@@ -91,7 +76,8 @@ public sealed class GitHubActionsClient : IDisposable
             result,
             actor,
             run.GetProperty("html_url").GetString() ?? $"https://github.com/{repository}/actions",
-            time);
+            time,
+            _connection.Id);
     }
 
     private static (string Owner, string Repository) ParseRepository(string value)

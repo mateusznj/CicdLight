@@ -5,6 +5,8 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Tray_NotConfigured" xml:space="preserve"><value>Nie skonfigurowano</value></data>
+  <data name="Tray_ConnectionErrors" xml:space="preserve"><value>{0} połączeń wymaga uwagi. Szczegóły znajdziesz w Ustawieniach.</value></data>
+  <data name="Tray_ConnectionErrorShort" xml:space="preserve"><value>Problem z połączeniem. Szczegóły w Ustawieniach.</value></data>
   <data name="Status_Summary" xml:space="preserve"><value>Błędne: {0}, do review: {1}, PR-y do rewizji: {2}</value></data>
   <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: błędne {0}, do review {1}, PR-y do rewizji {2}</value></data>
   <data name="Tooltip_Error" xml:space="preserve"><value>CicdLight: {0}</value></data>
@@ -32,6 +34,27 @@
   <data name="Ago_Hour" xml:space="preserve"><value>{0} godz. temu</value></data>
   <data name="Ago_Day" xml:space="preserve"><value>{0} d. temu</value></data>
   <data name="Settings_Title" xml:space="preserve"><value>CicdLight - Ustawienia</value></data>
+  <data name="Settings_Connections" xml:space="preserve"><value>Połączenia</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>Ogólne</value></data>
+  <data name="Connections_Title" xml:space="preserve"><value>Połączenia</value></data>
+  <data name="Connections_ListTitle" xml:space="preserve"><value>Połączone repozytoria</value></data>
+  <data name="Connections_Empty" xml:space="preserve"><value>Brak połączeń.</value></data>
+  <data name="Connection_Provider" xml:space="preserve"><value>Połącz z</value></data>
+  <data name="Connection_AzureDevOps" xml:space="preserve"><value>Azure DevOps</value></data>
+  <data name="Connection_GitHub" xml:space="preserve"><value>GitHub</value></data>
+  <data name="Connection_Organization" xml:space="preserve"><value>URL lub nazwa organizacji</value></data>
+  <data name="Connection_OrganizationPlaceholder" xml:space="preserve"><value>https://dev.azure.com/organizacja</value></data>
+  <data name="Connection_Project" xml:space="preserve"><value>Projekt</value></data>
+  <data name="Connection_Repository" xml:space="preserve"><value>Repozytorium</value></data>
+  <data name="Connection_RepositoryPlaceholder" xml:space="preserve"><value>owner/repository lub URL GitHub</value></data>
+  <data name="Connection_AzurePat" xml:space="preserve"><value>Personal Access Token</value></data>
+  <data name="Connection_GitHubToken" xml:space="preserve"><value>Token GitHub</value></data>
+  <data name="Connection_GitHubTokenOptional" xml:space="preserve"><value>Opcjonalny dla publicznych repozytoriów</value></data>
+  <data name="Connection_RequiredFields" xml:space="preserve"><value>Uzupełnij wymagane pola połączenia.</value></data>
+  <data name="Connection_AlreadyExists" xml:space="preserve"><value>To połączenie jest już na liście.</value></data>
+  <data name="Connection_Configured" xml:space="preserve"><value>Skonfigurowano</value></data>
+  <data name="Connection_Pipelines" xml:space="preserve"><value>Wybierz pipeline'y</value></data>
+  <data name="Button_AddConnection" xml:space="preserve"><value>Dodaj połączenie</value></data>
   <data name="Settings_Org" xml:space="preserve"><value>Organizacja (nazwa lub URL)</value></data>
   <data name="Settings_Projects" xml:space="preserve"><value>Projekty Azure DevOps (puste = wszystkie)</value></data>
   <data name="Settings_AzureProjects" xml:space="preserve"><value>Projekty Azure DevOps (pusta lista = wszystkie)</value></data>

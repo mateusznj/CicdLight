@@ -7,38 +7,43 @@ namespace CicdLight;
 
 public sealed class SettingsWindow : Window
 {
-    private readonly TextBox _org = new() { MinWidth = 300 };
-    private readonly TextBox _azureProjectInput = new() { MinWidth = 300, PlaceholderText = Strings.Get("Settings_AzureProjectPlaceholder") };
-    private readonly PasswordBox _pat = new() { MinWidth = 300 };
-    private readonly TextBox _githubRepositoryInput = new() { MinWidth = 300, PlaceholderText = Strings.Get("Settings_GitHubRepositoryPlaceholder") };
-    private readonly PasswordBox _githubToken = new() { MinWidth = 300 };
-    private readonly List<string> _azureProjects = [];
-    private readonly List<string> _githubRepositories = [];
-    private readonly StackPanel _azureProjectRows = new() { Spacing = 2 };
-    private readonly StackPanel _githubRepositoryRows = new() { Spacing = 2 };
+    private readonly ComboBox _provider = new() { MinWidth = 300 };
+    private readonly TextBox _target = new() { MinWidth = 300 };
+    private readonly TextBox _project = new() { MinWidth = 300 };
+    private readonly StackPanel _projectField = new() { Spacing = 4 };
+    private readonly PasswordBox _credential = new() { MinWidth = 300 };
+    private readonly StackPanel _connections = new() { Spacing = 8 };
+    private readonly TextBlock _connectionError = new() { TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _targetLabel = new();
+    private readonly TextBlock _projectLabel = new();
+    private readonly TextBlock _credentialLabel = new();
+    private readonly StackPanel _connectionsPage = new() { Spacing = 12, Padding = new Thickness(20) };
+    private readonly StackPanel _generalPage = new() { Spacing = 10, Padding = new Thickness(20) };
+    private readonly Grid _pageHost = new();
     private readonly NumberBox _poll = new() { Minimum = 15, Maximum = 3600, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = 15, MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };
     private readonly CheckBox _mine = new() { Content = Strings.Get("Settings_Mine") };
     private readonly CheckBox _startup = new() { Content = Strings.Get("Settings_Startup") };
     private readonly ComboBox _language = new() { MinWidth = 200, Items = { Strings.Get("Language_System"), "English", "Polski" } };
-    private readonly AppSettings _s;
+    private AppSettings _s;
     private readonly Action _onSaved;
+    private readonly Action<IntegrationConnection> _onChoosePipelines;
 
-    public SettingsWindow(AppSettings settings, Action onSaved)
+    public SettingsWindow(AppSettings settings, Action onSaved, Action<IntegrationConnection> onChoosePipelines)
     {
         _s = settings;
         _onSaved = onSaved;
+        _onChoosePipelines = onChoosePipelines;
         Title = Strings.Get("Settings_Title");
         WindowIcon.Apply(this);
-        AppWindow.Resize(new SizeInt32(560, 720));
+        AppWindow.Resize(new SizeInt32(760, 720));
 
-        _org.Text = settings.Organization;
-        _pat.Password = settings.Pat;
-        _azureProjects.AddRange(ParseEntries(settings.Projects));
-        _githubRepositories.AddRange(ParseEntries(settings.GitHubRepositories));
-        _githubToken.Password = settings.GitHubToken;
-        RenderEntries(_azureProjects, _azureProjectRows);
-        RenderEntries(_githubRepositories, _githubRepositoryRows);
+        _provider.Items.Add(Strings.Get("Connection_AzureDevOps"));
+        _provider.Items.Add(Strings.Get("Connection_GitHub"));
+        _provider.SelectedIndex = 0;
+        UpdateProviderFields();
+        _provider.SelectionChanged += (_, _) => UpdateProviderFields();
+        RenderConnections();
         _poll.Value = Math.Clamp(settings.PollSeconds, 15, 3600);
         _notify.IsChecked = settings.Notifications;
         _mine.IsChecked = settings.OnlyMyBuilds;
@@ -49,26 +54,50 @@ public sealed class SettingsWindow : Window
         save.Click += (_, _) => { Apply(); Close(); _onSaved(); };
         cancel.Click += (_, _) => Close();
 
-        var panel = new StackPanel { Spacing = 10, Padding = new Thickness(20) };
-        panel.Children.Add(Labeled(Strings.Get("Settings_Org"), _org));
-        panel.Children.Add(Labeled(Strings.Get("Settings_Pat"), _pat));
-        panel.Children.Add(BuildListSection(Strings.Get("Settings_AzureProjects"), _azureProjectInput, _azureProjects, _azureProjectRows));
-        panel.Children.Add(BuildListSection(Strings.Get("Settings_GitHubRepositories"), _githubRepositoryInput, _githubRepositories, _githubRepositoryRows, validateGitHubRepository: true));
-        panel.Children.Add(Labeled(Strings.Get("Settings_GitHubToken"), _githubToken));
-        panel.Children.Add(Labeled(Strings.Get("Settings_Poll"), _poll));
-        panel.Children.Add(Labeled(Strings.Get("Settings_Language"), _language));
-        panel.Children.Add(_notify);
-        panel.Children.Add(_mine);
-        panel.Children.Add(_startup);
-        panel.Children.Add(new StackPanel
+        _connectionsPage.Children.Add(new TextBlock { Text = Strings.Get("Connections_Title"), FontSize = 20, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        _connectionsPage.Children.Add(BuildConnectionForm());
+        _connectionsPage.Children.Add(new TextBlock { Text = Strings.Get("Connections_ListTitle"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0) });
+        _connectionsPage.Children.Add(_connections);
+        _generalPage.Children.Add(new TextBlock { Text = Strings.Get("Settings_General"), FontSize = 20, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        _generalPage.Children.Add(Labeled(Strings.Get("Settings_Poll"), _poll));
+        _generalPage.Children.Add(Labeled(Strings.Get("Settings_Language"), _language));
+        _generalPage.Children.Add(_notify);
+        _generalPage.Children.Add(_mine);
+        _generalPage.Children.Add(_startup);
+
+        var connectionsNav = new Button { Content = Strings.Get("Settings_Connections"), HorizontalAlignment = HorizontalAlignment.Stretch };
+        var generalNav = new Button { Content = Strings.Get("Settings_General"), HorizontalAlignment = HorizontalAlignment.Stretch };
+        connectionsNav.Click += (_, _) => ShowPage(_connectionsPage);
+        generalNav.Click += (_, _) => ShowPage(_generalPage);
+        var navigation = new StackPanel
+        {
+            Spacing = 4,
+            Padding = new Thickness(12),
+            Children = { connectionsNav, generalNav }
+        };
+
+        var saveButtons = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 8,
             HorizontalAlignment = HorizontalAlignment.Right,
             Children = { save, cancel }
-        });
-        Content = new ScrollViewer { Content = panel };
-        panel.Loaded += (_, _) => FitHeight(panel);
+        };
+        var root = new Grid { ColumnSpacing = 4 };
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        Grid.SetRowSpan(navigation, 2);
+        root.Children.Add(navigation);
+        Grid.SetColumn(_pageHost, 1);
+        root.Children.Add(_pageHost);
+        Grid.SetColumn(saveButtons, 1);
+        Grid.SetRow(saveButtons, 1);
+        root.Children.Add(saveButtons);
+        ShowPage(_connectionsPage);
+        Content = root;
+        root.Loaded += (_, _) => FitHeight(root);
     }
 
     /// <summary>Dopasowuje wysokość okna do zawartości (ogranicza do obszaru roboczego ekranu).</summary>
@@ -87,98 +116,177 @@ public sealed class SettingsWindow : Window
         Children = { new TextBlock { Text = label }, control }
     };
 
-    private StackPanel BuildListSection(string title, TextBox input, List<string> entries, StackPanel rows, bool validateGitHubRepository = false)
+    private void ShowPage(FrameworkElement page)
     {
-        var section = new StackPanel { Spacing = 4 };
-        section.Children.Add(new TextBlock { Text = title });
-        var error = new TextBlock { TextWrapping = TextWrapping.Wrap, Opacity = 0.8 };
-        var add = new Button { Content = Strings.Get("Button_Add"), MinWidth = 84 };
-        var inputRow = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-            Children = { input, add }
-        };
-        section.Children.Add(inputRow);
-        section.Children.Add(rows);
-        section.Children.Add(error);
+        _pageHost.Children.Clear();
+        _pageHost.Children.Add(new ScrollViewer { Content = page });
+    }
 
-        void AddEntry()
-        {
-            var value = input.Text.Trim();
-            if (value.Length == 0) return;
-            try
-            {
-                if (validateGitHubRepository)
-                    _ = GitHubActionsClient.GetRepositoryUrl(value);
-                if (!entries.Contains(value, StringComparer.OrdinalIgnoreCase))
-                    entries.Add(value);
-                input.Text = "";
-                error.Text = "";
-                RenderEntries(entries, rows);
-            }
-            catch (FormatException)
-            {
-                error.Text = Strings.Get("Settings_InvalidGitHubRepository");
-            }
-        }
-        add.Click += (_, _) => AddEntry();
+    private StackPanel BuildConnectionForm()
+    {
+        var form = new StackPanel { Spacing = 8 };
+        form.Children.Add(Labeled(Strings.Get("Connection_Provider"), _provider));
+        var target = new StackPanel { Spacing = 4, Children = { _targetLabel, _target } };
+        _projectField.Children.Add(_projectLabel);
+        _projectField.Children.Add(_project);
+        form.Children.Add(target);
+        form.Children.Add(_projectField);
+        form.Children.Add(LabeledDynamicCredential());
 
-        input.KeyDown += (_, e) =>
+        var add = new Button { Content = Strings.Get("Button_AddConnection"), MinWidth = 140 };
+        add.Click += (_, _) => AddConnection();
+        _target.KeyDown += (_, e) =>
         {
             if (e.Key == Windows.System.VirtualKey.Enter)
             {
-                AddEntry();
+                AddConnection();
                 e.Handled = true;
-                add.Focus(FocusState.Programmatic);
             }
         };
-        return section;
+        form.Children.Add(_connectionError);
+        form.Children.Add(add);
+        return form;
     }
 
-    private void RenderEntries(List<string> entries, StackPanel rows)
+    private StackPanel LabeledDynamicCredential() => new()
     {
-        rows.Children.Clear();
-        foreach (var entry in entries)
+        Spacing = 4,
+        Children = { _credentialLabel, _credential }
+    };
+
+    private void UpdateProviderFields()
+    {
+        var isAzure = _provider.SelectedIndex == 0;
+        _targetLabel.Text = Strings.Get(isAzure ? "Connection_Organization" : "Connection_Repository");
+        _target.PlaceholderText = Strings.Get(isAzure ? "Connection_OrganizationPlaceholder" : "Connection_RepositoryPlaceholder");
+        _projectLabel.Text = Strings.Get("Connection_Project");
+        _projectField.Visibility = isAzure ? Visibility.Visible : Visibility.Collapsed;
+        _credentialLabel.Text = Strings.Get(isAzure ? "Connection_AzurePat" : "Connection_GitHubToken");
+        _credential.PlaceholderText = isAzure ? "" : Strings.Get("Connection_GitHubTokenOptional");
+    }
+
+    private void AddConnection()
+    {
+        var isAzure = _provider.SelectedIndex == 0;
+        var target = _target.Text.Trim().TrimEnd('/');
+        var project = _project.Text.Trim();
+        var credential = _credential.Password.Trim();
+        if (target.Length == 0 || (isAzure && (project.Length == 0 || credential.Length == 0)))
         {
+            _connectionError.Text = Strings.Get("Connection_RequiredFields");
+            return;
+        }
+
+        if (isAzure)
+        {
+            if (_s.Connections.Any(connection => connection.Provider == IntegrationProvider.AzureDevOps &&
+                connection.Organization.Equals(target, StringComparison.OrdinalIgnoreCase) &&
+                connection.Project.Equals(project, StringComparison.OrdinalIgnoreCase)))
+            {
+                _connectionError.Text = Strings.Get("Connection_AlreadyExists");
+                return;
+            }
+        }
+        else
+        {
+            try
+            {
+                var canonicalUrl = GitHubActionsClient.GetRepositoryUrl(target);
+                if (_s.Connections.Any(connection => connection.Provider == IntegrationProvider.GitHub &&
+                    string.Equals(GitHubActionsClient.GetRepositoryUrl(connection.Repository), canonicalUrl, StringComparison.OrdinalIgnoreCase)))
+                {
+                    _connectionError.Text = Strings.Get("Connection_AlreadyExists");
+                    return;
+                }
+            }
+            catch (FormatException)
+            {
+                _connectionError.Text = Strings.Get("Settings_InvalidGitHubRepository");
+                return;
+            }
+        }
+
+        var connection = new IntegrationConnection
+        {
+            Provider = isAzure ? IntegrationProvider.AzureDevOps : IntegrationProvider.GitHub,
+            Organization = isAzure ? target : "",
+            Project = isAzure ? project : "",
+            Repository = isAzure ? "" : target
+        };
+        connection.Credential = credential;
+        _s.Connections.Add(connection);
+        _target.Text = "";
+        _project.Text = "";
+        _credential.Password = "";
+        _connectionError.Text = "";
+        Apply();
+        _s.Save();
+        RenderConnections();
+        _onSaved();
+    }
+
+    private void RenderConnections()
+    {
+        _connections.Children.Clear();
+        foreach (var connection in _s.Connections)
+        {
+            var title = new TextBlock { Text = connection.DisplayName, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
+            var subtitle = new TextBlock
+            {
+                Text = connection.LastError ?? Strings.Get("Connection_Configured"),
+                FontSize = 12,
+                Opacity = 0.75,
+                TextWrapping = TextWrapping.Wrap
+            };
+            var texts = new StackPanel { Spacing = 2, Children = { title, subtitle } };
+            var pipelines = new Button { Content = Strings.Get("Connection_Pipelines") };
+            pipelines.Click += (_, _) =>
+            {
+                Apply();
+                _s.Save();
+                _onSaved();
+                _onChoosePipelines(connection);
+            };
             var remove = new Button
             {
                 Content = new FontIcon { Glyph = "\uE74D", FontSize = 14 },
-                MinWidth = 32,
-                Padding = new Thickness(6, 2, 6, 2),
-                VerticalAlignment = VerticalAlignment.Center
+                MinWidth = 36,
+                Padding = new Thickness(6, 2, 6, 2)
             };
             ToolTipService.SetToolTip(remove, Strings.Get("Button_Remove"));
             remove.Click += (_, _) =>
             {
-                entries.Remove(entry);
-                RenderEntries(entries, rows);
+                Apply();
+                _s.Connections.Remove(connection);
+                _s.Save();
+                RenderConnections();
+                _onSaved();
             };
-            var row = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing = 8,
-                Children =
-                {
-                    new TextBlock { Text = entry, MaxWidth = 390, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis },
-                    remove
-                }
-            };
-            rows.Children.Add(row);
+            var row = new Grid { ColumnSpacing = 8, Padding = new Thickness(0, 6, 0, 6) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.Children.Add(texts);
+            Grid.SetColumn(pipelines, 1);
+            row.Children.Add(pipelines);
+            Grid.SetColumn(remove, 2);
+            row.Children.Add(remove);
+            _connections.Children.Add(row);
         }
+        if (_s.Connections.Count == 0)
+            _connections.Children.Add(new TextBlock { Text = Strings.Get("Connections_Empty"), Opacity = 0.7 });
     }
 
-    private static IEnumerable<string> ParseEntries(string value) =>
-        value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Distinct(StringComparer.OrdinalIgnoreCase);
+    public void RefreshConnectionStatuses() => RenderConnections();
+
+    public void UpdateSettings(AppSettings settings)
+    {
+        _s = settings;
+        RenderConnections();
+    }
 
     private void Apply()
     {
-        _s.Organization = _org.Text.Trim();
-        _s.Projects = string.Join(",", _azureProjects);
-        _s.Pat = _pat.Password.Trim();
-        _s.GitHubRepositories = string.Join(",", _githubRepositories);
-        _s.GitHubToken = _githubToken.Password.Trim();
         _s.PollSeconds = double.IsNaN(_poll.Value) ? 60 : (int)Math.Clamp(_poll.Value, 15, 3600);
         _s.Notifications = _notify.IsChecked == true;
         _s.OnlyMyBuilds = _mine.IsChecked == true;
