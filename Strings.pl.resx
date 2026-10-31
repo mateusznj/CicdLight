@@ -36,6 +36,7 @@
   <data name="Settings_Title" xml:space="preserve"><value>CicdLight - Ustawienia</value></data>
   <data name="Settings_Connections" xml:space="preserve"><value>Połączenia</value></data>
   <data name="Settings_General" xml:space="preserve"><value>Ogólne</value></data>
+  <data name="Settings_Pipelines" xml:space="preserve"><value>Pipeline'y</value></data>
   <data name="Connections_Title" xml:space="preserve"><value>Połączenia</value></data>
   <data name="Connection_AddTitle" xml:space="preserve"><value>Dodaj połączenie</value></data>
   <data name="Connection_EditTitle" xml:space="preserve"><value>Edytuj połączenie</value></data>

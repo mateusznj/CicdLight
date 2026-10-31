@@ -42,7 +42,7 @@ public sealed class ConnectionEditorWindow : Window
         _onSaved = onSaved;
         Title = Strings.Get(_isNew ? "Connection_AddTitle" : "Connection_EditTitle");
         WindowIcon.Apply(this);
-        AppWindow.Resize(new SizeInt32(520, 500));
+        AppWindow.Resize(new SizeInt32(520, 420));
 
         _provider.Items.Add(Strings.Get("Connection_AzureDevOps"));
         _provider.Items.Add(Strings.Get("Connection_GitHub"));
@@ -88,7 +88,6 @@ public sealed class ConnectionEditorWindow : Window
             Children = { save, cancel }
         });
         Content = panel;
-        panel.Loaded += (_, _) => FitHeight(panel);
     }
 
     private void UpdateProviderFields()
@@ -99,6 +98,7 @@ public sealed class ConnectionEditorWindow : Window
         _projectLabel.Text = Strings.Get("Connection_Project");
         _projectField.Visibility = isAzure ? Visibility.Visible : Visibility.Collapsed;
         _credentialLabel.Text = Strings.Get(isAzure ? "Connection_AzurePat" : "Connection_GitHubToken");
+        AppWindow.Resize(new SizeInt32(520, isAzure ? 480 : 420));
     }
 
     private void Save()
@@ -137,15 +137,6 @@ public sealed class ConnectionEditorWindow : Window
 
         _onSaved(_draft);
         Close();
-    }
-
-    private void FitHeight(FrameworkElement content)
-    {
-        var scale = content.XamlRoot?.RasterizationScale ?? 1.0;
-        var chrome = AppWindow.Size.Height - AppWindow.ClientSize.Height;
-        var wanted = (int)Math.Ceiling(content.ActualHeight * scale) + chrome;
-        var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
-        AppWindow.Resize(new SizeInt32(AppWindow.Size.Width, Math.Min(wanted, area.Height)));
     }
 
     private static StackPanel Labeled(string label, FrameworkElement control) => new()

@@ -35,7 +35,7 @@ public sealed class TrayController : IDisposable
             ToolTipText = "CicdLight"
         };
         _tray.ForceCreate();
-        _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings, ChoosePipelines,
+        _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings,
             OpenDefaultUrl, Exit, OpenUrl);
         _tray.TrayIcon.MessageWindow.MouseEventReceived += (_, e) =>
         {
@@ -195,8 +195,6 @@ public sealed class TrayController : IDisposable
         if ((DateTime.UtcNow - _popup.HiddenAtUtc).TotalMilliseconds < 300) return;
         _popup.Show(_snapshot);
     }
-
-    private void ChoosePipelines() => ShowSettings();
 
     private IReadOnlyList<(string Key, string Project, string Text)> GetPipelineItems(IntegrationConnection connection) =>
         _all.Builds.Where(build => build.ConnectionId == connection.Id)

@@ -25,7 +25,7 @@ public sealed class TrayPopupWindow : Window
     public bool IsVisible { get; private set; }
     public DateTime HiddenAtUtc { get; private set; } = DateTime.MinValue;
 
-    public TrayPopupWindow(Action refresh, Action settings, Action choose, Action openOrg, Action exit, Action<string?> openUrl)
+    public TrayPopupWindow(Action refresh, Action settings, Action openOrg, Action exit, Action<string?> openUrl)
     {
         _openUrl = openUrl;
         _hwnd = WindowNative.GetWindowHandle(this);
@@ -48,7 +48,6 @@ public sealed class TrayPopupWindow : Window
         var gear = new Button { Content = new FontIcon { Glyph = "\uE713", FontSize = 16 }, Style = subtle };
         var flyout = new MenuFlyout();
         flyout.Items.Add(MenuItem(Strings.Get("Menu_Settings"), "\uE713", () => { Hide(); settings(); }));
-        flyout.Items.Add(MenuItem(Strings.Get("Menu_Choose"), "\uE762", () => { Hide(); choose(); }));
         flyout.Items.Add(MenuItem(Strings.Get("Menu_OpenOrg"), "\uE774", () => { Hide(); openOrg(); }));
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(MenuItem(Strings.Get("Menu_Exit"), "\uE711", exit));

@@ -12,10 +12,12 @@ public sealed class SettingsWindow : Window
     private readonly StackPanel _connectionsPage = new() { Spacing = 12, Padding = new Thickness(20) };
     private readonly StackPanel _generalPage = new() { Spacing = 10, Padding = new Thickness(20) };
     private readonly StackPanel _pipelinePage = new() { Spacing = 12, Padding = new Thickness(20) };
+    private readonly StackPanel _pipelineHubPage = new() { Spacing = 8, Padding = new Thickness(20) };
     private readonly Grid _pageHost = new();
     private readonly ScrollViewer _connectionsScroll = new();
     private readonly ScrollViewer _generalScroll = new() { Visibility = Visibility.Collapsed };
     private readonly ScrollViewer _pipelineScroll = new() { Visibility = Visibility.Collapsed };
+    private readonly ScrollViewer _pipelineHubScroll = new() { Visibility = Visibility.Collapsed };
     private StackPanel? _settingsFooter;
     private readonly NumberBox _poll = new() { Minimum = 15, Maximum = 3600, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = 15, MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };
@@ -77,9 +79,11 @@ public sealed class SettingsWindow : Window
         _connectionsScroll.Content = _connectionsPage;
         _generalScroll.Content = _generalPage;
         _pipelineScroll.Content = _pipelinePage;
+        _pipelineHubScroll.Content = _pipelineHubPage;
         _pageHost.Children.Add(_connectionsScroll);
         _pageHost.Children.Add(_generalScroll);
         _pageHost.Children.Add(_pipelineScroll);
+        _pageHost.Children.Add(_pipelineHubScroll);
         content.Children.Add(_pageHost);
         Grid.SetRow(_settingsFooter, 1);
         content.Children.Add(_settingsFooter);
@@ -106,10 +110,21 @@ public sealed class SettingsWindow : Window
             Icon = new FontIcon { Glyph = "\uE713" },
             Tag = "general"
         });
+        navigation.MenuItems.Add(new NavigationViewItem
+        {
+            Content = Strings.Get("Settings_Pipelines"),
+            Icon = new FontIcon { Glyph = "\uE9D9" },
+            Tag = "pipelines"
+        });
         navigation.SelectionChanged += (_, e) =>
         {
             if (e.SelectedItem is not NavigationViewItem item) return;
-            ShowPage(item.Tag as string == "general" ? _generalPage : _connectionsPage);
+            ShowPage((item.Tag as string) switch
+            {
+                "general" => _generalPage,
+                "pipelines" => _pipelineHubPage,
+                _ => _connectionsPage
+            });
         };
         navigation.SelectedItem = navigation.MenuItems[0];
         ShowPage(_connectionsPage);
@@ -138,16 +153,43 @@ public sealed class SettingsWindow : Window
         _connectionsScroll.Visibility = ReferenceEquals(page, _connectionsPage) ? Visibility.Visible : Visibility.Collapsed;
         _generalScroll.Visibility = ReferenceEquals(page, _generalPage) ? Visibility.Visible : Visibility.Collapsed;
         _pipelineScroll.Visibility = ReferenceEquals(page, _pipelinePage) ? Visibility.Visible : Visibility.Collapsed;
+        _pipelineHubScroll.Visibility = ReferenceEquals(page, _pipelineHubPage) ? Visibility.Visible : Visibility.Collapsed;
         if (_settingsFooter != null)
-            _settingsFooter.Visibility = ReferenceEquals(page, _pipelinePage) ? Visibility.Collapsed : Visibility.Visible;
+            _settingsFooter.Visibility = ReferenceEquals(page, _pipelinePage) || ReferenceEquals(page, _pipelineHubPage)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
     }
 
-    private void ShowPipelineConfiguration(IntegrationConnection connection)
+    private void RenderPipelineHub()
+    {
+        _pipelineHubPage.Children.Clear();
+        _pipelineHubPage.Children.Add(new TextBlock
+        {
+            Text = Strings.Get("Settings_Pipelines"),
+            FontSize = 20,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+        });
+        foreach (var connection in _s.Connections)
+        {
+            var open = new Button
+            {
+                Content = new TextBlock { Text = connection.DisplayName, TextTrimming = TextTrimming.CharacterEllipsis },
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left
+            };
+            open.Click += (_, _) => ShowPipelineConfiguration(connection, _pipelineHubPage);
+            _pipelineHubPage.Children.Add(open);
+        }
+        if (_s.Connections.Count == 0)
+            _pipelineHubPage.Children.Add(new TextBlock { Text = Strings.Get("Connections_Empty"), Opacity = 0.7 });
+    }
+
+    private void ShowPipelineConfiguration(IntegrationConnection connection, FrameworkElement? returnPage = null)
     {
         _pipelineConnection = connection;
         _pipelinePage.Children.Clear();
         var back = new Button { Content = Strings.Get("Button_Back") };
-        back.Click += (_, _) => ShowPage(_connectionsPage);
+        back.Click += (_, _) => ShowPage(returnPage ?? _connectionsPage);
         _pipelinePage.Children.Add(back);
         _pipelinePage.Children.Add(new TextBlock
         {
@@ -195,7 +237,7 @@ public sealed class SettingsWindow : Window
                     RenderConnections();
                     ShowPage(_connectionsPage);
                 },
-                () => ShowPage(_connectionsPage)));
+                () => ShowPage(returnPage ?? _connectionsPage)));
         }
 
         ShowPage(_pipelinePage);
@@ -274,6 +316,7 @@ public sealed class SettingsWindow : Window
         }
         if (_s.Connections.Count == 0)
             _connections.Children.Add(new TextBlock { Text = Strings.Get("Connections_Empty"), Opacity = 0.7 });
+        RenderPipelineHub();
     }
 
     public void RefreshConnectionStatuses() => RenderConnections();
