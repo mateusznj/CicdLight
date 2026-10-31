@@ -1,26 +1,22 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Windows.Graphics;
 
 namespace CicdLight;
 
-public sealed class ChoosePipelinesWindow : Window
+public sealed class PipelineConfigurationControl : UserControl
 {
     private readonly List<(string Key, CheckBox Box)> _boxes = [];
     private readonly List<(string Project, CheckBox BuildFailed, CheckBox BuildFixed, CheckBox ReviewRequested)> _notificationBoxes = [];
 
-    public ChoosePipelinesWindow(
+    public PipelineConfigurationControl(
         IReadOnlyList<(string Key, string Project, string Text)> items,
         IReadOnlyList<string> projects,
         ICollection<string> watched,
         IReadOnlyDictionary<string, ProjectNotificationSettings> notifications,
         ProjectNotificationSettings defaults,
-        Action<List<string>, Dictionary<string, ProjectNotificationSettings>> onSaved)
+        Action<List<string>, Dictionary<string, ProjectNotificationSettings>> onSaved,
+        Action onCancelled)
     {
-        Title = Strings.Get("Choose_Title");
-        WindowIcon.Apply(this);
-        AppWindow.Resize(new SizeInt32(560, 620));
-
         var list = new StackPanel { Spacing = 6, Padding = new Thickness(16) };
         list.Children.Add(new TextBlock
         {
@@ -144,10 +140,9 @@ public sealed class ChoosePipelinesWindow : Window
                     BuildFixed = fixedBuild.IsChecked == true,
                     ReviewRequested = review.IsChecked == true
                 };
-            Close();
             onSaved(chosen, savedNotifications);
         };
-        cancel.Click += (_, _) => Close();
+        cancel.Click += (_, _) => onCancelled();
 
         var buttons = new StackPanel
         {

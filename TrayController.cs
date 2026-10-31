@@ -25,7 +25,6 @@ public sealed class TrayController : IDisposable
     private string? _notificationUrl;
     private bool _refreshing;
     private SettingsWindow? _settingsWindow;
-    private ChoosePipelinesWindow? _choose;
 
     public TrayController()
     {
@@ -197,54 +196,14 @@ public sealed class TrayController : IDisposable
         _popup.Show(_snapshot);
     }
 
-    private void ChoosePipelines()
-    {
-        if (_settings.Connections.Count == 1)
-        {
-            ChoosePipelines(_settings.Connections[0]);
-            return;
-        }
-        ShowSettings();
-    }
+    private void ChoosePipelines() => ShowSettings();
 
-    private void ChoosePipelines(IntegrationConnection connection)
-    {
-        var items = _all.Builds.Where(build => build.ConnectionId == connection.Id)
+    private IReadOnlyList<(string Key, string Project, string Text)> GetPipelineItems(IntegrationConnection connection) =>
+        _all.Builds.Where(build => build.ConnectionId == connection.Id)
             .Select(b => (Key: b.Key, Project: b.Project, Text: b.Definition))
             .Concat(_all.Releases.Where(release => release.ConnectionId == connection.Id)
                 .Select(r => (Key: r.Key, Project: r.Project, Text: r.Definition)))
             .OrderBy(i => i.Project).ThenBy(i => i.Text).ToList();
-        var projects = items.Select(i => i.Project)
-            .Concat(_all.PullRequests.Where(p => p.ConnectionId == connection.Id).Select(p => p.Project))
-            .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(p => p, StringComparer.CurrentCultureIgnoreCase).ToList();
-        if (items.Count == 0)
-        {
-            _tray.ShowNotification("CicdLight", Strings.Get("Toast_NoPipelines"), NotificationIcon.Info);
-            return;
-        }
-
-        if (_choose != null) { TrayPopupWindow.BringToFront(_choose); return; }
-        _choose = new ChoosePipelinesWindow(items, projects, connection.HasSelection ? connection.SelectedItems : [], _settings.ProjectNotifications,
-            new ProjectNotificationSettings
-            {
-                BuildFailed = _settings.NotifyBuildFailed,
-                BuildFixed = _settings.NotifyBuildFixed,
-                ReviewRequested = _settings.NotifyReviewRequested
-            }, (chosen, projectNotifications) =>
-        {
-            var current = _settings.Connections.FirstOrDefault(item => item.Id == connection.Id);
-            if (current != null)
-            {
-                current.SelectedItems = chosen;
-                current.HasSelection = true;
-            }
-            _settings.ProjectNotifications = projectNotifications;
-            _settings.Save();
-            _ = RefreshAsync();
-        });
-        _choose.Closed += (_, _) => _choose = null;
-        TrayPopupWindow.BringToFront(_choose);
-    }
 
     private void ShowSettings()
     {
@@ -254,7 +213,7 @@ public sealed class TrayController : IDisposable
             _settings = AppSettings.Load();
             ApplySettings();
             _settingsWindow?.UpdateSettings(_settings);
-        }, ChoosePipelines);
+        }, GetPipelineItems);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         TrayPopupWindow.BringToFront(_settingsWindow);
     }

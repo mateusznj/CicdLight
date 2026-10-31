@@ -7,23 +7,16 @@ namespace CicdLight;
 
 public sealed class SettingsWindow : Window
 {
-    private readonly ComboBox _provider = new() { MinWidth = 300 };
-    private readonly TextBox _target = new() { MinWidth = 300 };
-    private readonly TextBox _project = new() { MinWidth = 300 };
-    private readonly StackPanel _projectField = new() { Spacing = 4 };
-    private readonly PasswordBox _credential = new() { MinWidth = 300 };
     private readonly StackPanel _connections = new() { Spacing = 8 };
-    private readonly TextBlock _connectionError = new() { TextWrapping = TextWrapping.Wrap };
-    private readonly TextBlock _targetLabel = new();
-    private readonly TextBlock _projectLabel = new();
-    private readonly TextBlock _credentialLabel = new();
-    private readonly Button _saveConnection = new();
-    private readonly Button _cancelEditConnection = new();
+    private readonly Button _addConnection = new();
     private readonly StackPanel _connectionsPage = new() { Spacing = 12, Padding = new Thickness(20) };
     private readonly StackPanel _generalPage = new() { Spacing = 10, Padding = new Thickness(20) };
+    private readonly StackPanel _pipelinePage = new() { Spacing = 12, Padding = new Thickness(20) };
     private readonly Grid _pageHost = new();
     private readonly ScrollViewer _connectionsScroll = new();
     private readonly ScrollViewer _generalScroll = new() { Visibility = Visibility.Collapsed };
+    private readonly ScrollViewer _pipelineScroll = new() { Visibility = Visibility.Collapsed };
+    private StackPanel? _settingsFooter;
     private readonly NumberBox _poll = new() { Minimum = 15, Maximum = 3600, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = 15, MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };
     private readonly CheckBox _mine = new() { Content = Strings.Get("Settings_Mine") };
@@ -31,23 +24,20 @@ public sealed class SettingsWindow : Window
     private readonly ComboBox _language = new() { MinWidth = 200, Items = { Strings.Get("Language_System"), "English", "Polski" } };
     private AppSettings _s;
     private readonly Action _onSaved;
-    private readonly Action<IntegrationConnection> _onChoosePipelines;
-    private string? _editingConnectionId;
+    private readonly Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> _getPipelineItems;
+    private ConnectionEditorWindow? _connectionEditor;
+    private IntegrationConnection? _pipelineConnection;
 
-    public SettingsWindow(AppSettings settings, Action onSaved, Action<IntegrationConnection> onChoosePipelines)
+    public SettingsWindow(AppSettings settings, Action onSaved,
+        Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> getPipelineItems)
     {
         _s = settings;
         _onSaved = onSaved;
-        _onChoosePipelines = onChoosePipelines;
+        _getPipelineItems = getPipelineItems;
         Title = Strings.Get("Settings_Title");
         WindowIcon.Apply(this);
         AppWindow.Resize(new SizeInt32(760, 720));
 
-        _provider.Items.Add(Strings.Get("Connection_AzureDevOps"));
-        _provider.Items.Add(Strings.Get("Connection_GitHub"));
-        _provider.SelectedIndex = 0;
-        UpdateProviderFields();
-        _provider.SelectionChanged += (_, _) => UpdateProviderFields();
         RenderConnections();
         _poll.Value = Math.Clamp(settings.PollSeconds, 15, 3600);
         _notify.IsChecked = settings.Notifications;
@@ -60,7 +50,10 @@ public sealed class SettingsWindow : Window
         cancel.Click += (_, _) => Close();
 
         _connectionsPage.Children.Add(new TextBlock { Text = Strings.Get("Connections_Title"), FontSize = 20, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-        _connectionsPage.Children.Add(BuildConnectionForm());
+        _addConnection.Content = Strings.Get("Button_AddConnection");
+        _addConnection.HorizontalAlignment = HorizontalAlignment.Left;
+        _addConnection.Click += (_, _) => OpenConnectionEditor(null);
+        _connectionsPage.Children.Add(_addConnection);
         _connectionsPage.Children.Add(new TextBlock { Text = Strings.Get("Connections_ListTitle"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0) });
         _connectionsPage.Children.Add(_connections);
         _generalPage.Children.Add(new TextBlock { Text = Strings.Get("Settings_General"), FontSize = 20, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
@@ -70,7 +63,7 @@ public sealed class SettingsWindow : Window
         _generalPage.Children.Add(_mine);
         _generalPage.Children.Add(_startup);
 
-        var saveButtons = new StackPanel
+        _settingsFooter = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 8,
@@ -83,15 +76,19 @@ public sealed class SettingsWindow : Window
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _connectionsScroll.Content = _connectionsPage;
         _generalScroll.Content = _generalPage;
+        _pipelineScroll.Content = _pipelinePage;
         _pageHost.Children.Add(_connectionsScroll);
         _pageHost.Children.Add(_generalScroll);
+        _pageHost.Children.Add(_pipelineScroll);
         content.Children.Add(_pageHost);
-        Grid.SetRow(saveButtons, 1);
-        content.Children.Add(saveButtons);
+        Grid.SetRow(_settingsFooter, 1);
+        content.Children.Add(_settingsFooter);
 
         var navigation = new NavigationView
         {
             PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
+            OpenPaneLength = 190,
+            CompactPaneLength = 44,
             IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed,
             IsPaneToggleButtonVisible = false,
             IsSettingsVisible = false,
@@ -140,121 +137,99 @@ public sealed class SettingsWindow : Window
     {
         _connectionsScroll.Visibility = ReferenceEquals(page, _connectionsPage) ? Visibility.Visible : Visibility.Collapsed;
         _generalScroll.Visibility = ReferenceEquals(page, _generalPage) ? Visibility.Visible : Visibility.Collapsed;
+        _pipelineScroll.Visibility = ReferenceEquals(page, _pipelinePage) ? Visibility.Visible : Visibility.Collapsed;
+        if (_settingsFooter != null)
+            _settingsFooter.Visibility = ReferenceEquals(page, _pipelinePage) ? Visibility.Collapsed : Visibility.Visible;
     }
 
-    private StackPanel BuildConnectionForm()
+    private void ShowPipelineConfiguration(IntegrationConnection connection)
     {
-        var form = new StackPanel { Spacing = 8 };
-        form.Children.Add(Labeled(Strings.Get("Connection_Provider"), _provider));
-        var target = new StackPanel { Spacing = 4, Children = { _targetLabel, _target } };
-        _projectField.Children.Add(_projectLabel);
-        _projectField.Children.Add(_project);
-        form.Children.Add(target);
-        form.Children.Add(_projectField);
-        form.Children.Add(LabeledDynamicCredential());
-
-        _saveConnection.Content = Strings.Get("Button_AddConnection");
-        _saveConnection.MinWidth = 140;
-        _cancelEditConnection.Content = Strings.Get("Button_CancelEdit");
-        _cancelEditConnection.Visibility = Visibility.Collapsed;
-        _saveConnection.Click += (_, _) => SaveConnection();
-        _cancelEditConnection.Click += (_, _) => ResetConnectionForm();
-        _target.KeyDown += (_, e) =>
+        _pipelineConnection = connection;
+        _pipelinePage.Children.Clear();
+        var back = new Button { Content = Strings.Get("Button_Back") };
+        back.Click += (_, _) => ShowPage(_connectionsPage);
+        _pipelinePage.Children.Add(back);
+        _pipelinePage.Children.Add(new TextBlock
         {
-            if (e.Key == Windows.System.VirtualKey.Enter)
-            {
-                SaveConnection();
-                e.Handled = true;
-            }
-        };
-        form.Children.Add(_connectionError);
-        form.Children.Add(new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-            Children = { _saveConnection, _cancelEditConnection }
+            Text = connection.DisplayName,
+            FontSize = 20,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            TextTrimming = TextTrimming.CharacterEllipsis
         });
-        return form;
-    }
 
-    private StackPanel LabeledDynamicCredential() => new()
-    {
-        Spacing = 4,
-        Children = { _credentialLabel, _credential }
-    };
-
-    private void UpdateProviderFields()
-    {
-        var isAzure = _provider.SelectedIndex == 0;
-        _targetLabel.Text = Strings.Get(isAzure ? "Connection_Organization" : "Connection_Repository");
-        _target.PlaceholderText = Strings.Get(isAzure ? "Connection_OrganizationPlaceholder" : "Connection_RepositoryPlaceholder");
-        _projectLabel.Text = Strings.Get("Connection_Project");
-        _projectField.Visibility = isAzure ? Visibility.Visible : Visibility.Collapsed;
-        _credentialLabel.Text = Strings.Get(isAzure ? "Connection_AzurePat" : "Connection_GitHubToken");
-        _credential.PlaceholderText = isAzure ? "" : Strings.Get("Connection_GitHubTokenOptional");
-    }
-
-    private void SaveConnection()
-    {
-        var isAzure = _provider.SelectedIndex == 0;
-        var target = _target.Text.Trim().TrimEnd('/');
-        var project = _project.Text.Trim();
-        var credential = _credential.Password.Trim();
-        var existing = _s.Connections.FirstOrDefault(connection => connection.Id == _editingConnectionId);
-        if (target.Length == 0 || (isAzure && (project.Length == 0 || (credential.Length == 0 && existing == null))))
+        var items = _getPipelineItems(connection);
+        if (items.Count == 0)
         {
-            _connectionError.Text = Strings.Get("Connection_RequiredFields");
-            return;
-        }
-
-        if (isAzure)
-        {
-            if (_s.Connections.Any(connection => connection.Provider == IntegrationProvider.AzureDevOps &&
-                connection.Id != _editingConnectionId &&
-                connection.Organization.Equals(target, StringComparison.OrdinalIgnoreCase) &&
-                connection.Project.Equals(project, StringComparison.OrdinalIgnoreCase)))
+            _pipelinePage.Children.Add(new TextBlock
             {
-                _connectionError.Text = Strings.Get("Connection_AlreadyExists");
-                return;
-            }
+                Text = Strings.Get("Pipeline_NoItems"),
+                TextWrapping = TextWrapping.Wrap,
+                Opacity = 0.75
+            });
         }
         else
         {
-            try
-            {
-                var canonicalUrl = GitHubActionsClient.GetRepositoryUrl(target);
-                if (_s.Connections.Any(connection => connection.Provider == IntegrationProvider.GitHub &&
-                    connection.Id != _editingConnectionId &&
-                    string.Equals(GitHubActionsClient.GetRepositoryUrl(connection.Repository), canonicalUrl, StringComparison.OrdinalIgnoreCase)))
+            var projects = items.Select(item => item.Project).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            _pipelinePage.Children.Add(new PipelineConfigurationControl(
+                items,
+                projects,
+                connection.HasSelection ? connection.SelectedItems : [],
+                _s.ProjectNotifications,
+                new ProjectNotificationSettings
                 {
-                    _connectionError.Text = Strings.Get("Connection_AlreadyExists");
-                    return;
-                }
-            }
-            catch (FormatException)
-            {
-                _connectionError.Text = Strings.Get("Settings_InvalidGitHubRepository");
-                return;
-            }
+                    BuildFailed = _s.NotifyBuildFailed,
+                    BuildFixed = _s.NotifyBuildFixed,
+                    ReviewRequested = _s.NotifyReviewRequested
+                },
+                (selected, notifications) =>
+                {
+                    var current = _s.Connections.FirstOrDefault(entry => entry.Id == connection.Id);
+                    if (current != null)
+                    {
+                        current.SelectedItems = selected;
+                        current.HasSelection = true;
+                    }
+                    _s.ProjectNotifications = notifications;
+                    Apply();
+                    _onSaved();
+                    RenderConnections();
+                    ShowPage(_connectionsPage);
+                },
+                () => ShowPage(_connectionsPage)));
         }
 
-        var connection = existing ?? new IntegrationConnection();
-        connection.Provider = isAzure ? IntegrationProvider.AzureDevOps : IntegrationProvider.GitHub;
-        connection.Organization = isAzure ? target : "";
-        connection.Project = isAzure ? project : "";
-        connection.Repository = isAzure ? "" : target;
-        if (!string.IsNullOrEmpty(credential)) connection.Credential = credential;
-        if (existing == null)
+        ShowPage(_pipelinePage);
+    }
+
+    private void OpenConnectionEditor(IntegrationConnection? connection)
+    {
+        if (_connectionEditor != null)
         {
-            connection.Credential = credential;
-            _s.Connections.Add(connection);
+            TrayPopupWindow.BringToFront(_connectionEditor);
+            return;
         }
-        _connectionError.Text = "";
-        ResetConnectionForm();
-        Apply();
+
+        _connectionEditor = new ConnectionEditorWindow(connection, IsDuplicateConnection, SaveConnection);
+        _connectionEditor.Closed += (_, _) => _connectionEditor = null;
+        TrayPopupWindow.BringToFront(_connectionEditor);
+    }
+
+    private bool IsDuplicateConnection(IntegrationConnection candidate) => _s.Connections.Any(connection =>
+        connection.Id != candidate.Id && connection.Provider == candidate.Provider &&
+        (candidate.Provider == IntegrationProvider.AzureDevOps
+            ? connection.Organization.Equals(candidate.Organization, StringComparison.OrdinalIgnoreCase) &&
+              connection.Project.Equals(candidate.Project, StringComparison.OrdinalIgnoreCase)
+            : string.Equals(GitHubActionsClient.GetRepositoryUrl(connection.Repository),
+                GitHubActionsClient.GetRepositoryUrl(candidate.Repository), StringComparison.OrdinalIgnoreCase)));
+
+    private void SaveConnection(IntegrationConnection connection)
+    {
+        var existingIndex = _s.Connections.FindIndex(item => item.Id == connection.Id);
+        if (existingIndex < 0) _s.Connections.Add(connection);
+        else _s.Connections[existingIndex] = connection;
         _s.Save();
-        RenderConnections();
         _onSaved();
+        RenderConnections();
     }
 
     private void RenderConnections()
@@ -272,15 +247,9 @@ public sealed class SettingsWindow : Window
             };
             var texts = new StackPanel { Spacing = 2, Children = { title, subtitle } };
             var pipelines = new Button { Content = Strings.Get("Connection_Pipelines") };
-            pipelines.Click += (_, _) =>
-            {
-                Apply();
-                _s.Save();
-                _onSaved();
-                _onChoosePipelines(connection);
-            };
+            pipelines.Click += (_, _) => ShowPipelineConfiguration(connection);
             var edit = new Button { Content = Strings.Get("Button_Edit") };
-            edit.Click += (_, _) => BeginEditConnection(connection);
+            edit.Click += (_, _) => OpenConnectionEditor(connection);
             var remove = new Button
             {
                 Content = new FontIcon { Glyph = "\uE74D", FontSize = 14 },
@@ -288,14 +257,7 @@ public sealed class SettingsWindow : Window
                 Padding = new Thickness(6, 2, 6, 2)
             };
             ToolTipService.SetToolTip(remove, Strings.Get("Button_Remove"));
-            remove.Click += (_, _) =>
-            {
-                Apply();
-                _s.Connections.Remove(connection);
-                _s.Save();
-                RenderConnections();
-                _onSaved();
-            };
+            remove.Click += async (_, _) => await ConfirmRemoveConnectionAsync(connection);
             var row = new Grid { ColumnSpacing = 8, Padding = new Thickness(0, 8, 8, 8) };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -322,31 +284,23 @@ public sealed class SettingsWindow : Window
         RenderConnections();
     }
 
-    private void BeginEditConnection(IntegrationConnection connection)
+    private async Task ConfirmRemoveConnectionAsync(IntegrationConnection connection)
     {
-        _editingConnectionId = connection.Id;
-        _provider.SelectedIndex = connection.Provider == IntegrationProvider.AzureDevOps ? 0 : 1;
-        _provider.IsEnabled = false;
-        _target.Text = connection.Provider == IntegrationProvider.AzureDevOps ? connection.Organization : connection.Repository;
-        _project.Text = connection.Project;
-        _credential.Password = "";
-        _credential.PlaceholderText = Strings.Get("Connection_LeaveCredentialEmpty");
-        _saveConnection.Content = Strings.Get("Button_UpdateConnection");
-        _cancelEditConnection.Visibility = Visibility.Visible;
-        _connectionError.Text = "";
-        ShowPage(_connectionsPage);
-    }
+        var dialog = new ContentDialog
+        {
+            Title = Strings.Get("Connection_DeleteTitle"),
+            Content = Strings.Format("Connection_DeleteConfirmation", connection.DisplayName),
+            PrimaryButtonText = Strings.Get("Button_Remove"),
+            CloseButtonText = Strings.Get("Button_Cancel"),
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = _connections.XamlRoot
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
 
-    private void ResetConnectionForm()
-    {
-        _editingConnectionId = null;
-        _provider.IsEnabled = true;
-        _target.Text = "";
-        _project.Text = "";
-        _credential.Password = "";
-        _credential.PlaceholderText = _provider.SelectedIndex == 0 ? "" : Strings.Get("Connection_GitHubTokenOptional");
-        _saveConnection.Content = Strings.Get("Button_AddConnection");
-        _cancelEditConnection.Visibility = Visibility.Collapsed;
+        _s.Connections.Remove(connection);
+        _s.Save();
+        _onSaved();
+        RenderConnections();
     }
 
     private void Apply()
