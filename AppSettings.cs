@@ -12,6 +12,8 @@ public class AppSettings
     public string Organization { get; set; } = "";          // e.g. "myorg" or full https://dev.azure.com/myorg
     public string Projects { get; set; } = "";              // comma separated; empty = all projects
     public string EncryptedPat { get; set; } = "";          // DPAPI (current user)
+    public string GitHubRepositories { get; set; } = "";
+    public string EncryptedGitHubToken { get; set; } = "";
     public int PollSeconds { get; set; } = 60;
     public bool Notifications { get; set; } = true;
     public bool NotifyBuildFailed { get; set; } = true;
@@ -41,6 +43,23 @@ public class AppSettings
     }
 
     [System.Text.Json.Serialization.JsonIgnore]
+    public string GitHubToken
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(EncryptedGitHubToken)) return "";
+            try
+            {
+                var bytes = ProtectedData.Unprotect(Convert.FromBase64String(EncryptedGitHubToken), null, DataProtectionScope.CurrentUser);
+                return Encoding.UTF8.GetString(bytes);
+            }
+            catch (CryptographicException) { return ""; }
+        }
+        set => EncryptedGitHubToken = string.IsNullOrEmpty(value) ? "" :
+            Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(value), null, DataProtectionScope.CurrentUser));
+    }
+
+    [System.Text.Json.Serialization.JsonIgnore]
     public string OrganizationUrl
     {
         get
@@ -54,7 +73,16 @@ public class AppSettings
     public string[] ProjectList => Projects.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     [System.Text.Json.Serialization.JsonIgnore]
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(Organization) && !string.IsNullOrEmpty(Pat);
+    public string[] GitHubRepositoryList => GitHubRepositories.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsAzureDevOpsConfigured => !string.IsNullOrWhiteSpace(Organization) && !string.IsNullOrEmpty(Pat);
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsGitHubConfigured => GitHubRepositoryList.Length > 0;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsConfigured => IsAzureDevOpsConfigured || IsGitHubConfigured;
 
     public static AppSettings Load()
     {

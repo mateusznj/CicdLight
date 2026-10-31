@@ -27,6 +27,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić status pipeline'ów, 
 
 - **Ikona w zasobniku systemowym (tray):** zielony — OK, niebieski — build w toku, żółty — PR oczekuje na Twoje review, czerwony — nieudany build, szary — błąd lub brak konfiguracji.
 - **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y oczekujące na review oraz Twoje PR-y. Kliknięcie elementu otwiera go w przeglądarce.
+- **GitHub Actions:** statusy ostatnich uruchomień z wielu repozytoriów GitHub, wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; token do repozytoriów prywatnych jest szyfrowany DPAPI (`CurrentUser`).
 - **Powiadomienia systemowe:** globalny wyłącznik oraz checkboxy dla nieudanych i naprawionych buildów oraz nowych próśb o review w tabeli projektów w oknie wyboru pipeline'ów.
 - **Ochrona tokenu PAT:** szyfrowanie DPAPI (`CurrentUser`); ustawienia zapisane w `%APPDATA%\CicdLight\settings.json`.
 - **Integracja z Windows:** opcjonalny autostart oraz uruchamianie tylko jednej instancji.
@@ -35,7 +36,9 @@ CicdLight to niewielka aplikacja, która pozwala śledzić status pipeline'ów, 
 
 1. Przejdź do [najnowszego wydania (GitHub Releases)](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Pobierz odpowiedni instalator z sekcji **Assets** i uruchom go.
-3. Uruchom CicdLight i w oknie **Settings** skonfiguruj organizację Azure DevOps, opcjonalną listę projektów (oddzielonych przecinkami) oraz token PAT.
+3. Uruchom CicdLight i w oknie **Settings** skonfiguruj organizację Azure DevOps oraz token PAT. Projekty Azure DevOps i repozytoria GitHub dodawaj osobno w odpowiednich sekcjach. Repozytorium GitHub podaj jako `owner/repo` lub URL. Pusta lista projektów Azure oznacza wszystkie projekty organizacji.
+
+Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tokena z uprawnieniem **Actions: Read** i dostępem do wybranych repozytoriów. Token dla publicznych repozytoriów jest opcjonalny.
 
 > Pliki instalacyjne znajdują się również w katalogu [`artifacts`](artifacts), ale zalecanym miejscem pobierania opublikowanych wersji jest zakładka **Releases**.
 
@@ -80,6 +83,7 @@ CicdLight is a small Windows system tray application that keeps Azure DevOps pip
 
 - **System tray status:** green — OK, blue — build in progress, yellow — PR awaiting your review, red — failed build, gray — error or missing configuration.
 - **At-a-glance overview:** recent builds (pipeline + branch), releases, PRs awaiting review and your own PRs. Click an item to open it in the browser.
+- **GitHub Actions:** recent workflow runs from multiple GitHub repositories, shown alongside Azure DevOps builds. Public repositories need no token; private-repository tokens are protected with Windows DPAPI (`CurrentUser`).
 - **System notifications:** a global switch and per-project checkboxes for failed and recovered builds and new review requests in the pipeline selection window.
 - **PAT protection:** Windows DPAPI encryption (`CurrentUser`); settings stored in `%APPDATA%\CicdLight\settings.json`.
 - **Windows integration:** optional startup with Windows and single-instance execution.
@@ -88,7 +92,9 @@ CicdLight is a small Windows system tray application that keeps Azure DevOps pip
 
 1. Open the [latest GitHub Release](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Download the appropriate installer from **Assets** and run it.
-3. Start CicdLight. In **Settings**, configure your Azure DevOps organization, an optional comma-separated project list, and your PAT.
+3. Start CicdLight. In **Settings**, configure your Azure DevOps organization and PAT. Add Azure DevOps projects and GitHub repositories individually in their respective sections. Enter GitHub repositories as `owner/repo` or a URL. An empty Azure project list means all projects in the organization.
+
+To read Actions runs in private repositories, use a fine-grained token with **Actions: Read** access to the selected repositories. A token is optional for public repositories.
 
 > Installer files are also available in [`artifacts`](artifacts), but **Releases** is the recommended location for downloading published versions.
 

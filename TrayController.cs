@@ -17,6 +17,7 @@ public sealed class TrayController : IDisposable
     private readonly DispatcherQueueTimer _timer;
     private AppSettings _settings = AppSettings.Load();
     private AzureDevOpsClient? _client;
+    private GitHubActionsClient? _githubClient;
     private CancellationTokenSource? _cts;
     private Snapshot _snapshot = Snapshot.Empty();
     private Snapshot _all = Snapshot.Empty();
@@ -37,7 +38,7 @@ public sealed class TrayController : IDisposable
         };
         _tray.ForceCreate();
         _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings, ChoosePipelines,
-            () => OpenUrl(_settings.IsConfigured ? _settings.OrganizationUrl : null), Exit, OpenUrl);
+            OpenDefaultUrl, Exit, OpenUrl);
         _tray.TrayIcon.MessageWindow.MouseEventReceived += (_, e) =>
         {
             switch (e.MouseEvent)
@@ -65,7 +66,9 @@ public sealed class TrayController : IDisposable
     {
         Strings.SetLanguage(_settings.Language);
         _client?.Dispose();
-        _client = _settings.IsConfigured ? new AzureDevOpsClient(_settings) : null;
+        _githubClient?.Dispose();
+        _client = _settings.IsAzureDevOpsConfigured ? new AzureDevOpsClient(_settings) : null;
+        _githubClient = _settings.IsGitHubConfigured ? new GitHubActionsClient(_settings) : null;
         _previousBuilds = null;
         _previousReviewPrs = null;
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(15, _settings.PollSeconds));
@@ -76,7 +79,7 @@ public sealed class TrayController : IDisposable
     private async Task RefreshAsync()
     {
         if (_refreshing) return;
-        if (_client == null)
+        if (_client == null && _githubClient == null)
         {
             _snapshot = Snapshot.Empty(Strings.Get("Tray_NotConfigured"));
             Update();
@@ -88,9 +91,18 @@ public sealed class TrayController : IDisposable
         _cts = new CancellationTokenSource();
         try
         {
-            _all = await _client.FetchAsync(_cts.Token);
+            var requests = new List<Task<Snapshot>>();
+            if (_client != null) requests.Add(_client.FetchAsync(_cts.Token));
+            if (_githubClient != null) requests.Add(_githubClient.FetchAsync(_cts.Token));
+            var snapshots = await Task.WhenAll(requests);
+            var errors = snapshots.Where(snapshot => snapshot.Error != null).Select(snapshot => snapshot.Error!).ToList();
+            _all = new Snapshot(
+                snapshots.SelectMany(snapshot => snapshot.Builds).ToList(),
+                snapshots.SelectMany(snapshot => snapshot.PullRequests).ToList(),
+                errors.Count == 0 ? null : string.Join(" | ", errors),
+                snapshots.SelectMany(snapshot => snapshot.Releases).ToList());
             _snapshot = _all.Filter(_settings.WatchedItems);
-            Notify(_snapshot);
+            if (errors.Count == 0) Notify(_snapshot);
             Update();
         }
         catch (OperationCanceledException) { }
@@ -218,6 +230,18 @@ public sealed class TrayController : IDisposable
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 
+    private void OpenDefaultUrl()
+    {
+        if (_settings.IsAzureDevOpsConfigured)
+        {
+            OpenUrl(_settings.OrganizationUrl);
+            return;
+        }
+
+        if (_settings.GitHubRepositoryList.Length > 0)
+            OpenUrl(GitHubActionsClient.GetRepositoryUrl(_settings.GitHubRepositoryList[0]));
+    }
+
     private static Icon MakeIcon(Health health)
     {
         var color = health switch
@@ -266,6 +290,7 @@ public sealed class TrayController : IDisposable
         _timer.Stop();
         _cts?.Cancel();
         _client?.Dispose();
+        _githubClient?.Dispose();
         _tray.Dispose();
     }
 }

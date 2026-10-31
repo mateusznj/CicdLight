@@ -33,8 +33,14 @@
   <data name="Ago_Day" xml:space="preserve"><value>{0} d ago</value></data>
   <data name="Settings_Title" xml:space="preserve"><value>CicdLight - Settings</value></data>
   <data name="Settings_Org" xml:space="preserve"><value>Organization (name or URL)</value></data>
-  <data name="Settings_Projects" xml:space="preserve"><value>Projects (comma separated, empty = all)</value></data>
+  <data name="Settings_Projects" xml:space="preserve"><value>Azure DevOps projects (empty = all)</value></data>
+  <data name="Settings_AzureProjects" xml:space="preserve"><value>Azure DevOps projects (empty = all)</value></data>
+  <data name="Settings_AzureProjectPlaceholder" xml:space="preserve"><value>Project name</value></data>
   <data name="Settings_Pat" xml:space="preserve"><value>Personal Access Token</value></data>
+  <data name="Settings_GitHubRepositories" xml:space="preserve"><value>GitHub repositories</value></data>
+  <data name="Settings_GitHubRepositoryPlaceholder" xml:space="preserve"><value>owner/repo or GitHub URL</value></data>
+  <data name="Settings_GitHubToken" xml:space="preserve"><value>GitHub token (optional for public repositories)</value></data>
+  <data name="Settings_InvalidGitHubRepository" xml:space="preserve"><value>Enter a GitHub URL or owner/repository.</value></data>
   <data name="Settings_NotifyBuildFailed" xml:space="preserve"><value>Failed builds</value></data>
   <data name="Settings_NotifyBuildFixed" xml:space="preserve"><value>Recovered builds</value></data>
   <data name="Settings_NotifyReview" xml:space="preserve"><value>New review requests</value></data>
@@ -48,6 +54,8 @@
   <data name="Settings_Language" xml:space="preserve"><value>Language (applies after restart of windows)</value></data>
   <data name="Language_System" xml:space="preserve"><value>System default</value></data>
   <data name="Button_Save" xml:space="preserve"><value>Save</value></data>  <data name="Button_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Button_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Button_Remove" xml:space="preserve"><value>Remove</value></data>
   <data name="Choose_Title" xml:space="preserve"><value>CicdLight - Choose pipelines</value></data>
   <data name="Error_Auth" xml:space="preserve"><value>Authorization failed - check the PAT and its scopes.</value></data>
   <data name="Error_Html" xml:space="preserve"><value>Unexpected HTML response - check the organization name and PAT.</value></data>

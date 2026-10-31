@@ -33,8 +33,14 @@
   <data name="Ago_Day" xml:space="preserve"><value>{0} d. temu</value></data>
   <data name="Settings_Title" xml:space="preserve"><value>CicdLight - Ustawienia</value></data>
   <data name="Settings_Org" xml:space="preserve"><value>Organizacja (nazwa lub URL)</value></data>
-  <data name="Settings_Projects" xml:space="preserve"><value>Projekty (po przecinku, puste = wszystkie)</value></data>
+  <data name="Settings_Projects" xml:space="preserve"><value>Projekty Azure DevOps (puste = wszystkie)</value></data>
+  <data name="Settings_AzureProjects" xml:space="preserve"><value>Projekty Azure DevOps (pusta lista = wszystkie)</value></data>
+  <data name="Settings_AzureProjectPlaceholder" xml:space="preserve"><value>Nazwa projektu</value></data>
   <data name="Settings_Pat" xml:space="preserve"><value>Personal Access Token</value></data>
+  <data name="Settings_GitHubRepositories" xml:space="preserve"><value>Repozytoria GitHub</value></data>
+  <data name="Settings_GitHubRepositoryPlaceholder" xml:space="preserve"><value>owner/repo lub URL GitHub</value></data>
+  <data name="Settings_GitHubToken" xml:space="preserve"><value>Token GitHub (opcjonalny dla publicznych repozytoriów)</value></data>
+  <data name="Settings_InvalidGitHubRepository" xml:space="preserve"><value>Wpisz URL GitHub lub owner/repository.</value></data>
   <data name="Settings_NotifyBuildFailed" xml:space="preserve"><value>Nieudane buildy</value></data>
   <data name="Settings_NotifyBuildFixed" xml:space="preserve"><value>Naprawione buildy</value></data>
   <data name="Settings_NotifyReview" xml:space="preserve"><value>Nowe prośby o review</value></data>
@@ -49,6 +55,8 @@
   <data name="Language_System" xml:space="preserve"><value>Domyślny systemowy</value></data>
   <data name="Button_Save" xml:space="preserve"><value>Zapisz</value></data>
   <data name="Button_Cancel" xml:space="preserve"><value>Anuluj</value></data>
+  <data name="Button_Add" xml:space="preserve"><value>Dodaj</value></data>
+  <data name="Button_Remove" xml:space="preserve"><value>Usuń</value></data>
   <data name="Choose_Title" xml:space="preserve"><value>CicdLight - Wybór pipeline'ów</value></data>
   <data name="Error_Auth" xml:space="preserve"><value>Autoryzacja nieudana - sprawdź PAT i jego uprawnienia.</value></data>
   <data name="Error_Html" xml:space="preserve"><value>Nieoczekiwana odpowiedź HTML - sprawdź nazwę organizacji i PAT.</value></data>
