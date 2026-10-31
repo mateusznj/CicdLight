@@ -22,6 +22,8 @@ public sealed class SettingsWindow : Window
     private readonly StackPanel _connectionsPage = new() { Spacing = 12, Padding = new Thickness(20) };
     private readonly StackPanel _generalPage = new() { Spacing = 10, Padding = new Thickness(20) };
     private readonly Grid _pageHost = new();
+    private readonly ScrollViewer _connectionsScroll = new();
+    private readonly ScrollViewer _generalScroll = new() { Visibility = Visibility.Collapsed };
     private readonly NumberBox _poll = new() { Minimum = 15, Maximum = 3600, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = 15, MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };
     private readonly CheckBox _mine = new() { Content = Strings.Get("Settings_Mine") };
@@ -79,6 +81,10 @@ public sealed class SettingsWindow : Window
         var content = new Grid();
         content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        _connectionsScroll.Content = _connectionsPage;
+        _generalScroll.Content = _generalPage;
+        _pageHost.Children.Add(_connectionsScroll);
+        _pageHost.Children.Add(_generalScroll);
         content.Children.Add(_pageHost);
         Grid.SetRow(saveButtons, 1);
         content.Children.Add(saveButtons);
@@ -132,8 +138,8 @@ public sealed class SettingsWindow : Window
 
     private void ShowPage(FrameworkElement page)
     {
-        _pageHost.Children.Clear();
-        _pageHost.Children.Add(new ScrollViewer { Content = page });
+        _connectionsScroll.Visibility = ReferenceEquals(page, _connectionsPage) ? Visibility.Visible : Visibility.Collapsed;
+        _generalScroll.Visibility = ReferenceEquals(page, _generalPage) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private StackPanel BuildConnectionForm()
