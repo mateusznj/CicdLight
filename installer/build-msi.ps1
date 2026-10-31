@@ -1,5 +1,5 @@
 param(
-	[string]$Version = '1.0.0',
+	[string]$Version = '1.0.1',
 	[ValidateSet('x64', 'arm64')][string]$Arch = 'x64'
 )
 
@@ -15,7 +15,7 @@ if (-not (Get-Command wix -ErrorAction SilentlyContinue)) {
 $rid = "win-$Arch"
 $platform = if ($Arch -eq 'arm64') { 'ARM64' } else { 'x64' }
 
-dotnet publish (Join-Path $root 'CicdLight.csproj') -c Release -r $rid --self-contained -p:Platform=$platform -o $publish
+dotnet publish (Join-Path $root 'CicdLight.csproj') -c Release -r $rid --self-contained -p:Platform=$platform -p:Version=$Version -o $publish
 if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
 
 $icon = Join-Path $root 'Assets\app.ico'

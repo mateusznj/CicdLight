@@ -16,7 +16,7 @@ public sealed class TrayController : IDisposable
     private readonly TrayPopupWindow _popup;
     private readonly DispatcherQueueTimer _timer;
     private AppSettings _settings = AppSettings.Load();
-    private AzureDevOpsClient? _client;
+    private readonly List<(IntegrationConnection Connection, IIntegrationClient Client)> _clients = [];
     private CancellationTokenSource? _cts;
     private Snapshot _snapshot = Snapshot.Empty();
     private Snapshot _all = Snapshot.Empty();
@@ -25,7 +25,6 @@ public sealed class TrayController : IDisposable
     private string? _notificationUrl;
     private bool _refreshing;
     private SettingsWindow? _settingsWindow;
-    private ChoosePipelinesWindow? _choose;
 
     public TrayController()
     {
@@ -36,8 +35,8 @@ public sealed class TrayController : IDisposable
             ToolTipText = "CicdLight"
         };
         _tray.ForceCreate();
-        _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings, ChoosePipelines,
-            () => OpenUrl(_settings.IsConfigured ? _settings.OrganizationUrl : null), Exit, OpenUrl);
+        _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings,
+            OpenDefaultUrl, Exit, OpenUrl);
         _tray.TrayIcon.MessageWindow.MouseEventReceived += (_, e) =>
         {
             switch (e.MouseEvent)
@@ -64,8 +63,18 @@ public sealed class TrayController : IDisposable
     private void ApplySettings()
     {
         Strings.SetLanguage(_settings.Language);
-        _client?.Dispose();
-        _client = _settings.IsConfigured ? new AzureDevOpsClient(_settings) : null;
+        foreach (var client in _clients) client.Client.Dispose();
+        _clients.Clear();
+        foreach (var connection in _settings.Connections)
+        {
+            IIntegrationClient client = connection.Provider switch
+            {
+                IntegrationProvider.AzureDevOps => new AzureDevOpsClient(_settings, connection),
+                IntegrationProvider.GitHub => new GitHubActionsClient(connection),
+                _ => throw new InvalidOperationException($"Unsupported provider: {connection.Provider}")
+            };
+            _clients.Add((connection, client));
+        }
         _previousBuilds = null;
         _previousReviewPrs = null;
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(15, _settings.PollSeconds));
@@ -76,7 +85,7 @@ public sealed class TrayController : IDisposable
     private async Task RefreshAsync()
     {
         if (_refreshing) return;
-        if (_client == null)
+        if (_clients.Count == 0)
         {
             _snapshot = Snapshot.Empty(Strings.Get("Tray_NotConfigured"));
             Update();
@@ -88,8 +97,29 @@ public sealed class TrayController : IDisposable
         _cts = new CancellationTokenSource();
         try
         {
-            _all = await _client.FetchAsync(_cts.Token);
-            _snapshot = _all.Filter(_settings.WatchedItems);
+            var requests = _clients.Select(async entry =>
+            {
+                var snapshot = await entry.Client.FetchAsync(_cts.Token);
+                entry.Connection.LastError = snapshot.Error;
+                return (entry.Connection, Snapshot: snapshot);
+            });
+            var results = await Task.WhenAll(requests);
+            var errors = results.Count(result => result.Snapshot.Error != null);
+            _all = new Snapshot(
+                results.SelectMany(result => result.Snapshot.Builds).ToList(),
+                results.SelectMany(result => result.Snapshot.PullRequests).ToList(),
+                null,
+                results.SelectMany(result => result.Snapshot.Releases).ToList());
+            _snapshot = new Snapshot(
+                results.SelectMany(result => result.Connection.HasSelection
+                    ? result.Snapshot.Builds.Where(build => result.Connection.SelectedItems.Contains(build.Key))
+                    : result.Snapshot.Builds).ToList(),
+                results.SelectMany(result => result.Snapshot.PullRequests).ToList(),
+                errors == 0 ? null : Strings.Format("Tray_ConnectionErrors", errors),
+                results.SelectMany(result => result.Connection.HasSelection
+                    ? result.Snapshot.Releases.Where(release => result.Connection.SelectedItems.Contains(release.Key))
+                    : result.Snapshot.Releases).ToList());
+            _settingsWindow?.RefreshConnectionStatuses();
             Notify(_snapshot);
             Update();
         }
@@ -99,8 +129,6 @@ public sealed class TrayController : IDisposable
 
     private void Notify(Snapshot s)
     {
-        if (s.Error != null) return;
-
         var builds = s.Builds.ToDictionary(b => b.Key);
         var reviewPrs = s.PullRequests.Where(p => p.NeedsMyReview).Select(p => p.Id).ToHashSet();
 
@@ -111,14 +139,15 @@ public sealed class TrayController : IDisposable
             {
                 _previousBuilds.TryGetValue(b.Key, out var old);
                 if (old != null && old.Id == b.Id && old.IsRunning == b.IsRunning) continue;
+                var notify = GetProjectNotifications(b.Project);
 
-                if (b.IsFailed)
+                if (b.IsFailed && notify.BuildFailed)
                     Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, NotificationIcon.Error);
-                else if (b.IsSucceeded && old != null && old.IsFailed)
+                else if (b.IsSucceeded && old != null && old.IsFailed && notify.BuildFixed)
                     Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, NotificationIcon.Info);
             }
 
-            foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Id)))
+            foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Id) && GetProjectNotifications(p.Project).ReviewRequested))
                 Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
         }
 
@@ -132,6 +161,18 @@ public sealed class TrayController : IDisposable
         _tray.ShowNotification(title, text, icon);
     }
 
+    private ProjectNotificationSettings GetProjectNotifications(string project)
+    {
+        var existing = _settings.ProjectNotifications.FirstOrDefault(entry =>
+            string.Equals(entry.Key, project, StringComparison.OrdinalIgnoreCase)).Value;
+        return existing ?? new ProjectNotificationSettings
+        {
+            BuildFailed = _settings.NotifyBuildFailed,
+            BuildFixed = _settings.NotifyBuildFixed,
+            ReviewRequested = _settings.NotifyReviewRequested
+        };
+    }
+
     private void Update()
     {
         var old = _tray.Icon;
@@ -142,7 +183,7 @@ public sealed class TrayController : IDisposable
         var reviews = _snapshot.PullRequests.Count(p => p.NeedsMyReview);
         var text = _snapshot.Error != null
             ? Strings.Format("Tooltip_Error", _snapshot.Error)
-            : Strings.Format("Tooltip_Summary", failed, reviews);
+            : Strings.Format("Tooltip_Summary", failed, reviews, _snapshot.PullRequestsToRevise);
         _tray.ToolTipText = text.Length > 127 ? text[..127] : text;
         if (_popup.IsVisible) _popup.Render(_snapshot);
     }
@@ -155,28 +196,12 @@ public sealed class TrayController : IDisposable
         _popup.Show(_snapshot);
     }
 
-    private void ChoosePipelines()
-    {
-        var items = _all.Builds.Select(b => (Key: b.Key, Project: b.Project, Text: b.Definition))
-            .Concat(_all.Releases.Select(r => (Key: r.Key, Project: r.Project, Text: r.Definition)))
+    private IReadOnlyList<(string Key, string Project, string Text)> GetPipelineItems(IntegrationConnection connection) =>
+        _all.Builds.Where(build => build.ConnectionId == connection.Id)
+            .Select(b => (Key: b.Key, Project: b.Project, Text: b.Definition))
+            .Concat(_all.Releases.Where(release => release.ConnectionId == connection.Id)
+                .Select(r => (Key: r.Key, Project: r.Project, Text: r.Definition)))
             .OrderBy(i => i.Project).ThenBy(i => i.Text).ToList();
-        if (items.Count == 0)
-        {
-            _tray.ShowNotification("CicdLight", Strings.Get("Toast_NoPipelines"), NotificationIcon.Info);
-            return;
-        }
-
-        if (_choose != null) { TrayPopupWindow.BringToFront(_choose); return; }
-        _choose = new ChoosePipelinesWindow(items, _settings.WatchedItems, chosen =>
-        {
-            _settings.WatchedItems = chosen.Count == items.Count ? [] : chosen;
-            _settings.Save();
-            _snapshot = _all.Filter(_settings.WatchedItems);
-            Update();
-        });
-        _choose.Closed += (_, _) => _choose = null;
-        TrayPopupWindow.BringToFront(_choose);
-    }
 
     private void ShowSettings()
     {
@@ -185,7 +210,8 @@ public sealed class TrayController : IDisposable
         {
             _settings = AppSettings.Load();
             ApplySettings();
-        });
+            _settingsWindow?.UpdateSettings(_settings);
+        }, GetPipelineItems);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         TrayPopupWindow.BringToFront(_settingsWindow);
     }
@@ -194,6 +220,19 @@ public sealed class TrayController : IDisposable
     {
         if (!string.IsNullOrEmpty(url))
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
+
+    private void OpenDefaultUrl()
+    {
+        var azure = _settings.Connections.FirstOrDefault(connection => connection.Provider == IntegrationProvider.AzureDevOps);
+        if (azure != null)
+        {
+            OpenUrl(azure.OrganizationUrl);
+            return;
+        }
+
+        var github = _settings.Connections.FirstOrDefault(connection => connection.Provider == IntegrationProvider.GitHub);
+        if (github != null) OpenUrl(GitHubActionsClient.GetRepositoryUrl(github.Repository));
     }
 
     private static Icon MakeIcon(Health health)
@@ -243,7 +282,8 @@ public sealed class TrayController : IDisposable
     {
         _timer.Stop();
         _cts?.Cancel();
-        _client?.Dispose();
+        foreach (var client in _clients) client.Client.Dispose();
+        _clients.Clear();
         _tray.Dispose();
     }
 }
