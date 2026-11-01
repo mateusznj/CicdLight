@@ -224,7 +224,7 @@ public sealed class TrayController : IDisposable
             _settings = AppSettings.Load();
             ApplySettings();
             _settingsWindow?.UpdateSettings(_settings);
-        }, GetPipelineItems, GetProjects);
+        }, GetPipelineItems, GetProjects, ShowTestNotification);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         TrayPopupWindow.BringToFront(_settingsWindow);
     }
@@ -238,6 +238,15 @@ public sealed class TrayController : IDisposable
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(project => project, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+
+    private void ShowTestNotification()
+    {
+        _notificationUrl = null;
+        _tray.ShowNotification(
+            Strings.Get("Toast_TestNotification"),
+            Strings.Get("Toast_TestNotificationText"),
+            NotificationIcon.Info);
+    }
 
     private static void OpenUrl(string? url)
     {

@@ -31,6 +31,7 @@ public sealed class SettingsWindow : Window
     private readonly ComboBox _language = new() { MinWidth = 200, Items = { Strings.Get("Language_System"), "English", "Polski" } };
     private AppSettings _s;
     private readonly Action _onSaved;
+    private readonly Action _testNotification;
     private readonly Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> _getPipelineItems;
     private readonly Func<IntegrationConnection, IReadOnlyList<string>> _getProjects;
     private ConnectionEditorWindow? _connectionEditor;
@@ -38,10 +39,12 @@ public sealed class SettingsWindow : Window
 
     public SettingsWindow(AppSettings settings, Action onSaved,
         Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> getPipelineItems,
-        Func<IntegrationConnection, IReadOnlyList<string>> getProjects)
+        Func<IntegrationConnection, IReadOnlyList<string>> getProjects,
+        Action testNotification)
     {
         _s = settings;
         _onSaved = onSaved;
+        _testNotification = testNotification;
         _getPipelineItems = getPipelineItems;
         _getProjects = getProjects;
         Title = Strings.Get("Settings_Title");
@@ -70,6 +73,9 @@ public sealed class SettingsWindow : Window
         _generalPage.Children.Add(Labeled(Strings.Get("Settings_Poll"), _poll));
         _generalPage.Children.Add(Labeled(Strings.Get("Settings_Language"), _language));
         _generalPage.Children.Add(_notify);
+        var testNotificationButton = new Button { Content = Strings.Get("Settings_TestNotification") };
+        testNotificationButton.Click += (_, _) => _testNotification();
+        _generalPage.Children.Add(testNotificationButton);
         _generalPage.Children.Add(_mine);
         _generalPage.Children.Add(_startup);
         _aboutPage.Children.Add(new TextBlock
