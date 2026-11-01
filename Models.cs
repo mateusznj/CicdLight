@@ -118,6 +118,6 @@ public record Snapshot(
         Error != null ? Health.Unknown :
         Builds.Any(b => b.IsFailed && !b.IsRunning) || Releases.Any(r => r.IsFailed && !r.IsRunning) ? Health.Failed :
         Builds.Any(b => b.IsRunning) || Releases.Any(r => r.IsRunning) ? Health.Running :
-        PullRequests.Any(p => p.NeedsMyReview) ? Health.Warning :
+        PullRequests.Any(p => p.NeedsMyReview || p.HasUnresolvedComments) ? Health.Warning :
         Health.Ok;
 }

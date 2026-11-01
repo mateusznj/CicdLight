@@ -25,7 +25,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 
 ### Funkcje
 
-- **Ikona w zasobniku systemowym (tray):** zielony — OK, niebieski — build w toku, żółty — PR oczekuje na Twoje review, czerwony — nieudany build, szary — błąd lub brak konfiguracji.
+- **Ikona w zasobniku systemowym (tray):** zielony — OK, niebieski — build w toku, żółty — PR oczekuje na Twoje review lub ma nierozwiązane komentarze, czerwony — nieudany build, szary — błąd lub brak konfiguracji.
 - **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y Azure DevOps i GitHub oczekujące na review oraz Twoje PR-y. Przy PR-ach wyświetlana jest liczba nierozwiązanych wątków komentarzy. Kliknięcie elementu otwiera go w przeglądarce.
 - **Połączenia:** lista repozytoriów GitHub i projektów Azure DevOps, każde z osobnym kluczem i wyborem obserwowanych pipeline'ów. Menu pozwala otworzyć osobno każdy skonfigurowany projekt Azure DevOps lub repozytorium GitHub. Sekret jest szyfrowany DPAPI (`CurrentUser`).
 - **GitHub Actions:** statusy ostatnich uruchomień wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; prywatne używają tokenu przypisanego do danego repozytorium.
@@ -84,7 +84,7 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 
 ### Features
 
-- **System tray status:** green — OK, blue — build in progress, yellow — PR awaiting your review, red — failed build, gray — error or missing configuration.
+- **System tray status:** green — OK, blue — build in progress, yellow — PR awaiting your review or has unresolved comments, red — failed build, gray — error or missing configuration.
 - **At-a-glance overview:** recent builds (pipeline + branch), releases, Azure DevOps and GitHub PRs awaiting review and your own PRs. Each PR shows its unresolved comment thread count. Click an item to open it in the browser.
 - **Connections:** a list of GitHub repositories and Azure DevOps projects, each with its own credential and selected pipelines. The menu can open each configured Azure DevOps project or GitHub repository separately. Secrets are protected with Windows DPAPI (`CurrentUser`).
 - **GitHub Actions:** recent workflow runs shown alongside Azure DevOps builds. Public repositories need no token; private repositories use a token stored on that repository's connection.
