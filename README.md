@@ -25,11 +25,16 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 
 ### Funkcje
 
-- **Ikona w zasobniku systemowym (tray):**
+**Ikona w zasobniku systemowym (tray):**
 
-  ![Warianty kolorystyczne ikony zasobnika](Assets/tray-status-colors.svg)
+| Ikona | Stan | Opis |
+|---|---|---|
+| ![Zielona ikona statusu](Assets/tray-status-ok.svg) | **Zielony — OK** | Brak aktywnego builda i problemów z PR-ami. |
+| ![Niebieska ikona statusu](Assets/tray-status-running.svg) | **Niebieski — build w toku** | Trwa build lub wydanie. |
+| ![Żółta ikona statusu](Assets/tray-status-warning.svg) | **Żółty — review lub komentarze** | PR oczekuje na Twoje review albo ma nierozwiązane komentarze. |
+| ![Czerwona ikona statusu](Assets/tray-status-failed.svg) | **Czerwony — niepowodzenie** | Build lub wydanie zakończyło się niepowodzeniem. |
+| ![Szara ikona statusu](Assets/tray-status-unknown.svg) | **Szary — brak danych** | Brak konfiguracji lub błąd pobierania statusu. |
 
-  Zielony (`#2EB85C`) — OK; niebieski (`#3498DB`) — build w toku; żółty (`#F1C40F`) — PR oczekuje na Twoje review lub ma nierozwiązane komentarze; czerwony (`#E74C3C`) — nieudany build; szary (`#808080`) — błąd lub brak konfiguracji.
 - **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y Azure DevOps i GitHub oczekujące na review oraz Twoje PR-y. Przy PR-ach wyświetlana jest liczba nierozwiązanych wątków komentarzy. Kliknięcie elementu otwiera go w przeglądarce.
 - **Połączenia:** lista repozytoriów GitHub i projektów Azure DevOps, każde z osobnym kluczem i wyborem obserwowanych pipeline'ów. Menu pozwala otworzyć osobno każdy skonfigurowany projekt Azure DevOps lub repozytorium GitHub. Sekret jest szyfrowany DPAPI (`CurrentUser`).
 - **GitHub Actions:** statusy ostatnich uruchomień wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; prywatne używają tokenu przypisanego do danego repozytorium.
@@ -88,11 +93,16 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 
 ### Features
 
-- **System tray status:**
+**System tray status:**
 
-  ![System tray icon color variants](Assets/tray-status-colors.svg)
+| Icon | Status | Description |
+|---|---|---|
+| ![Green status icon](Assets/tray-status-ok.svg) | **Green — OK** | No active builds or PR issues. |
+| ![Blue status icon](Assets/tray-status-running.svg) | **Blue — build in progress** | A build or release is running. |
+| ![Yellow status icon](Assets/tray-status-warning.svg) | **Yellow — review or comments** | A PR is awaiting your review or has unresolved comments. |
+| ![Red status icon](Assets/tray-status-failed.svg) | **Red — failed** | A build or release has failed. |
+| ![Gray status icon](Assets/tray-status-unknown.svg) | **Gray — no status** | No configuration or a status retrieval error. |
 
-  Green (`#2EB85C`) — OK; blue (`#3498DB`) — build in progress; yellow (`#F1C40F`) — PR awaiting your review or has unresolved comments; red (`#E74C3C`) — failed build; gray (`#808080`) — error or missing configuration.
 - **At-a-glance overview:** recent builds (pipeline + branch), releases, Azure DevOps and GitHub PRs awaiting review and your own PRs. Each PR shows its unresolved comment thread count. Click an item to open it in the browser.
 - **Connections:** a list of GitHub repositories and Azure DevOps projects, each with its own credential and selected pipelines. The menu can open each configured Azure DevOps project or GitHub repository separately. Secrets are protected with Windows DPAPI (`CurrentUser`).
 - **GitHub Actions:** recent workflow runs shown alongside Azure DevOps builds. Public repositories need no token; private repositories use a token stored on that repository's connection.

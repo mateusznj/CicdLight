@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-labelledby="title">
+  <title id="title">Yellow CicdLight tray status icon</title>
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="#F1C40F"/>
+  <path d="M6 17h5.5L14.5 9.5 18.5 22.5 21 16h5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
