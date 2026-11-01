@@ -26,6 +26,7 @@ public sealed class SettingsWindow : Window
     private StackPanel? _settingsFooter;
     private readonly NumberBox _poll = new() { Minimum = 15, Maximum = 3600, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = 15, MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };
+    private readonly CheckBox _notifyUnresolvedComments = new() { Content = Strings.Get("Settings_NotifyUnresolvedComments") };
     private readonly CheckBox _mine = new() { Content = Strings.Get("Settings_Mine") };
     private readonly CheckBox _startup = new() { Content = Strings.Get("Settings_Startup") };
     private readonly ComboBox _language = new() { MinWidth = 200, Items = { Strings.Get("Language_System"), "English", "Polski" } };
@@ -48,6 +49,7 @@ public sealed class SettingsWindow : Window
         RenderConnections();
         _poll.Value = Math.Clamp(settings.PollSeconds, 15, 3600);
         _notify.IsChecked = settings.Notifications;
+        _notifyUnresolvedComments.IsChecked = settings.NotifyUnresolvedComments;
         _mine.IsChecked = settings.OnlyMyBuilds;
         _startup.IsChecked = settings.StartWithWindows;
         _language.SelectedIndex = settings.Language switch { "en" => 1, "pl" => 2, _ => 0 };
@@ -67,6 +69,7 @@ public sealed class SettingsWindow : Window
         _generalPage.Children.Add(Labeled(Strings.Get("Settings_Poll"), _poll));
         _generalPage.Children.Add(Labeled(Strings.Get("Settings_Language"), _language));
         _generalPage.Children.Add(_notify);
+        _generalPage.Children.Add(_notifyUnresolvedComments);
         _generalPage.Children.Add(_mine);
         _generalPage.Children.Add(_startup);
         _aboutPage.Children.Add(new TextBlock
@@ -471,6 +474,7 @@ public sealed class SettingsWindow : Window
     {
         _s.PollSeconds = double.IsNaN(_poll.Value) ? 60 : (int)Math.Clamp(_poll.Value, 15, 3600);
         _s.Notifications = _notify.IsChecked == true;
+        _s.NotifyUnresolvedComments = _notifyUnresolvedComments.IsChecked == true;
         _s.OnlyMyBuilds = _mine.IsChecked == true;
         _s.StartWithWindows = _startup.IsChecked == true;
         _s.Language = _language.SelectedIndex switch { 1 => "en", 2 => "pl", _ => "" };

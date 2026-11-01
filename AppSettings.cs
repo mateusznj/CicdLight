@@ -20,6 +20,7 @@ public class AppSettings
     public bool NotifyBuildFailed { get; set; } = true;
     public bool NotifyBuildFixed { get; set; } = true;
     public bool NotifyReviewRequested { get; set; } = true;
+    public bool NotifyUnresolvedComments { get; set; } = true;
     public bool OnlyMyBuilds { get; set; } = false;
     public bool StartWithWindows { get; set; } = false;
     public string Language { get; set; } = "";                 // "" = system, "en", "pl"

@@ -16,6 +16,8 @@
   <data name="Toast_BuildFixedText" xml:space="preserve"><value>{0} #{1}</value></data>
   <data name="Toast_Review" xml:space="preserve"><value>Review requested: {0}</value></data>
   <data name="Toast_ReviewText" xml:space="preserve"><value>#{0} {1} - {2}</value></data>
+  <data name="Toast_UnresolvedComment" xml:space="preserve"><value>New unresolved PR comment</value></data>
+  <data name="Toast_UnresolvedCommentText" xml:space="preserve"><value>#{0} {1} — unresolved threads: {2}</value></data>
   <data name="Toast_NoPipelines" xml:space="preserve"><value>No pipelines loaded yet. Check the settings and refresh first.</value></data>
   <data name="Popup_Refresh" xml:space="preserve"><value>Refresh now</value></data>
   <data name="Popup_UnresolvedCommentsCount" xml:space="preserve"><value>Unresolved threads: {0}</value></data>
@@ -97,6 +99,7 @@
   <data name="Choose_Pipelines" xml:space="preserve"><value>Pipelines and releases</value></data>
   <data name="Settings_Poll" xml:space="preserve"><value>Refresh every (seconds)</value></data>
   <data name="Settings_Notify" xml:space="preserve"><value>Show notifications</value></data>
+  <data name="Settings_NotifyUnresolvedComments" xml:space="preserve"><value>Notify about new unresolved PR comments</value></data>
   <data name="Settings_Mine" xml:space="preserve"><value>Only builds requested by me</value></data>
   <data name="Settings_Startup" xml:space="preserve"><value>Start with Windows</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Language (applies after restart of windows)</value></data>
