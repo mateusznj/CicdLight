@@ -47,12 +47,12 @@ public sealed class TrayPopupWindow : Window
 
         var subtle = (Style)Application.Current.Resources["SubtleButtonStyle"];
 
-        var refreshBtn = new Button { Content = new FontIcon { Glyph = "\uE72C", FontSize = 16 }, Style = subtle };
+        var refreshBtn = new Button { Content = new FontIcon { Glyph = Icons.GetGlyph(AppIcon.Refresh), FontSize = 16 }, Style = subtle };
         ToolTipService.SetToolTip(refreshBtn, Strings.Get("Popup_Refresh"));        refreshBtn.Click += (_, _) => refresh();
 
-        var gear = new Button { Content = new FontIcon { Glyph = "\uE713", FontSize = 16 }, Style = subtle };
+        var gear = new Button { Content = new FontIcon { Glyph = Icons.GetGlyph(AppIcon.Settings), FontSize = 16 }, Style = subtle };
         var flyout = new MenuFlyout();
-        flyout.Items.Add(MenuItem(Strings.Get("Menu_Settings"), "\uE713", () => { Hide(); settings(); }));
+        flyout.Items.Add(MenuItem(Strings.Get("Menu_Settings"), AppIcon.Settings, () => { Hide(); settings(); }));
         flyout.Opening += (_, _) => PopulateConnectionMenus(flyout);
         gear.Flyout = flyout;
 
@@ -133,17 +133,17 @@ public sealed class TrayPopupWindow : Window
         var releases = s.Releases.OrderByDescending(r => r.IsFailed).ThenByDescending(r => r.IsRunning).Take(3).ToList();
         if (releases.Count > 0) AddHeader(Strings.Get("Section_Releases"), null);
         foreach (var r in releases)
-            AddRow(r.IsRunning ? Glyph.Running : r.IsFailed ? Glyph.Failed : Glyph.Ok, r.Definition, r.ReleaseName, "", r.Url, r.Project);
+            AddRow(r.IsRunning ? AppIcon.Running : r.IsFailed ? AppIcon.Failed : AppIcon.Ok, r.Definition, r.ReleaseName, "", r.Url, r.Project);
 
         var review = s.PullRequests.Where(p => p.NeedsMyReview).Take(5).ToList();
         if (review.Count > 0) AddHeader(Strings.Get("Section_Review"), $"{reviews}");
         foreach (var p in review)
-            AddRow(Glyph.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.UnresolvedCommentCount);
+            AddRow(AppIcon.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.UnresolvedCommentCount);
 
         var mine = s.PullRequests.Where(p => p.IsMine).Take(3).ToList();
         if (mine.Count > 0) AddHeader(Strings.Get("Section_MyPrs"), null);
         foreach (var p in mine)
-            AddRow(Glyph.Pr, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project, p.UnresolvedCommentCount);
+            AddRow(AppIcon.PullRequest, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project, p.UnresolvedCommentCount);
 
         if (_list.Children.Count == 0)
             _list.Children.Add(new TextBlock { Text = s.Error ?? Strings.Get("Popup_Nothing"), Margin = new Thickness(8), TextWrapping = TextWrapping.Wrap, Opacity = 0.7 });
@@ -155,14 +155,20 @@ public sealed class TrayPopupWindow : Window
         _list.Children.Add(tb);
     }
 
-    private void AddRow((string Glyph, Windows.UI.Color Color) icon, string title, string subtitle, string time, string url, string tooltip, int unresolvedCommentCount = 0)
+    private void AddRow(AppIcon icon, string title, string subtitle, string time, string url, string tooltip, int unresolvedCommentCount = 0)
     {
         var grid = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Stretch };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        var glyph = new FontIcon { Glyph = icon.Glyph, FontSize = 20, Foreground = new SolidColorBrush(icon.Color), VerticalAlignment = VerticalAlignment.Center };
+        var glyph = new FontIcon
+        {
+            Glyph = Icons.GetGlyph(icon),
+            FontSize = 20,
+            Foreground = new SolidColorBrush(Icons.GetColor(icon)),
+            VerticalAlignment = VerticalAlignment.Center
+        };
         grid.Children.Add(glyph);
 
         var texts = new StackPanel
@@ -187,9 +193,9 @@ public sealed class TrayPopupWindow : Window
                 {
                     new FontIcon
                     {
-                        Glyph = Glyph.Comments.Item1,
+                        Glyph = Icons.GetGlyph(AppIcon.Comments),
                         FontSize = 16,
-                        Foreground = new SolidColorBrush(Glyph.Comments.Item2),
+                        Foreground = new SolidColorBrush(Icons.GetColor(AppIcon.Comments)),
                         VerticalAlignment = VerticalAlignment.Center
                     },
                     new TextBlock
@@ -224,9 +230,9 @@ public sealed class TrayPopupWindow : Window
         _list.Children.Add(btn);
     }
 
-    private static MenuFlyoutItem MenuItem(string text, string glyph, Action onClick)
+    private static MenuFlyoutItem MenuItem(string text, AppIcon glyph, Action onClick)
     {
-        var item = new MenuFlyoutItem { Text = text, Icon = new FontIcon { Glyph = glyph } };
+        var item = new MenuFlyoutItem { Text = text, Icon = new FontIcon { Glyph = Icons.GetGlyph(glyph) } };
         item.Click += (_, _) => onClick();
         return item;
     }
@@ -237,20 +243,20 @@ public sealed class TrayPopupWindow : Window
             flyout.Items.RemoveAt(1);
 
         var connections = _getConnections();
-        AddConnectionMenu(flyout, Strings.Get("Menu_OpenAzureDevOps"), "\uE774",
+        AddConnectionMenu(flyout, Strings.Get("Menu_OpenAzureDevOps"), AppIcon.AzureDevOps,
             connections.Where(connection => connection.Provider == IntegrationProvider.AzureDevOps),
             connection => string.IsNullOrWhiteSpace(connection.Project)
                 ? connection.OrganizationUrl
                 : $"{connection.OrganizationUrl}/{Uri.EscapeDataString(connection.Project)}");
-        AddConnectionMenu(flyout, Strings.Get("Menu_OpenGitHub"), "\uE8A7",
+        AddConnectionMenu(flyout, Strings.Get("Menu_OpenGitHub"), AppIcon.GitHub,
             connections.Where(connection => connection.Provider == IntegrationProvider.GitHub),
             connection => GitHubActionsClient.GetRepositoryUrl(connection.Repository));
 
         flyout.Items.Add(new MenuFlyoutSeparator());
-        flyout.Items.Add(MenuItem(Strings.Get("Menu_Exit"), "\uE711", _exit));
+        flyout.Items.Add(MenuItem(Strings.Get("Menu_Exit"), AppIcon.Exit, _exit));
     }
 
-    private void AddConnectionMenu(MenuFlyout flyout, string title, string glyph,
+    private void AddConnectionMenu(MenuFlyout flyout, string title, AppIcon glyph,
         IEnumerable<IntegrationConnection> connections, Func<IntegrationConnection, string> getUrl)
     {
         var items = connections.ToList();
@@ -259,7 +265,7 @@ public sealed class TrayPopupWindow : Window
         var providerMenu = new MenuFlyoutSubItem
         {
             Text = title,
-            Icon = new FontIcon { Glyph = glyph }
+            Icon = new FontIcon { Glyph = Icons.GetGlyph(glyph) }
         };
         foreach (var connection in items)
         {
@@ -270,28 +276,62 @@ public sealed class TrayPopupWindow : Window
         flyout.Items.Add(providerMenu);
     }
 
-    private static class Glyph
+    private enum AppIcon
     {
-        public static readonly (string, Windows.UI.Color) Ok = ("\uEC61", Windows.UI.Color.FromArgb(255, 46, 184, 92));
-        public static readonly (string, Windows.UI.Color) Failed = ("\uEB90", Windows.UI.Color.FromArgb(255, 231, 76, 60));
-        public static readonly (string, Windows.UI.Color) Running = ("\uE768", Windows.UI.Color.FromArgb(255, 52, 152, 219));
-        public static readonly (string, Windows.UI.Color) Other = ("\uE91F", Windows.UI.Color.FromArgb(255, 150, 150, 150));
-        public static readonly (string, Windows.UI.Color) Review = ("\uE8F4", Windows.UI.Color.FromArgb(255, 241, 196, 15));
-        public static readonly (string, Windows.UI.Color) Pr = ("\uE8F4", Windows.UI.Color.FromArgb(255, 150, 150, 150));
-        public static readonly (string, Windows.UI.Color) Comments = ("\uE8BD", Windows.UI.Color.FromArgb(255, 241, 150, 15));
+        Refresh,
+        Settings,
+        AzureDevOps,
+        GitHub,
+        Exit,
+        Ok,
+        Failed,
+        Running,
+        Other,
+        Review,
+        PullRequest,
+        Comments
     }
 
-    private static (string, Windows.UI.Color) BuildGlyph(BuildInfo b) =>
-        b.IsRunning ? Glyph.Running : b.IsFailed ? Glyph.Failed : b.IsSucceeded ? Glyph.Ok : Glyph.Other;
+    private static class Icons
+    {
+        public static string GetGlyph(AppIcon icon) => icon switch
+        {
+            AppIcon.Refresh => "\uE72C",
+            AppIcon.Settings => "\uE713",
+            AppIcon.AzureDevOps => "\uE774",
+            AppIcon.GitHub => "\uE8A7",
+            AppIcon.Exit => "\uE711",
+            AppIcon.Ok => "\uEC61",
+            AppIcon.Failed => "\uEB90",
+            AppIcon.Running => "\uE768",
+            AppIcon.Other => "\uE91F",
+            AppIcon.Review or AppIcon.PullRequest => "\uE8F4",
+            AppIcon.Comments => "\uE8BD",
+            _ => throw new ArgumentOutOfRangeException(nameof(icon), icon, "Unknown application icon.")
+        };
+
+        public static Windows.UI.Color GetColor(AppIcon icon) => icon switch
+        {
+            AppIcon.Ok => Windows.UI.Color.FromArgb(255, 46, 184, 92),
+            AppIcon.Failed => Windows.UI.Color.FromArgb(255, 231, 76, 60),
+            AppIcon.Running => Windows.UI.Color.FromArgb(255, 52, 152, 219),
+            AppIcon.Review => Windows.UI.Color.FromArgb(255, 241, 196, 15),
+            AppIcon.Comments => Windows.UI.Color.FromArgb(255, 241, 150, 15),
+            _ => Windows.UI.Color.FromArgb(255, 150, 150, 150)
+        };
+    }
+
+    private static AppIcon BuildGlyph(BuildInfo b) =>
+        b.IsRunning ? AppIcon.Running : b.IsFailed ? AppIcon.Failed : b.IsSucceeded ? AppIcon.Ok : AppIcon.Other;
 
     private static string Ago(DateTimeOffset? t)
     {
         if (t == null) return "";
-        var d = DateTimeOffset.Now - t.Value;
-        return Strings.Get("Ago_Now");
-        return Strings.Format("Ago_Min", (int)d.TotalMinutes);
-        return Strings.Format("Ago_Hour", (int)d.TotalHours);
-        return Strings.Format("Ago_Day", (int)d.TotalDays);
+        var age = DateTimeOffset.Now - t.Value;
+        if (age < TimeSpan.FromMinutes(1)) return Strings.Get("Ago_Now");
+        if (age < TimeSpan.FromHours(1)) return Strings.Format("Ago_Min", (int)age.TotalMinutes);
+        if (age < TimeSpan.FromDays(1)) return Strings.Format("Ago_Hour", (int)age.TotalHours);
+        return Strings.Format("Ago_Day", (int)age.TotalDays);
     }
 
     /// <summary>Wysuwa okno na wierzch (okna aplikacji z zasobnika bywają otwierane „pod spodem”).</summary>

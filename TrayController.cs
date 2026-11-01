@@ -268,23 +268,27 @@ public sealed class TrayController : IDisposable
             Health.Failed => Color.FromArgb(231, 76, 60),
             _ => Color.Gray
         };
-        using var bmp = new Bitmap(32, 32);
-        using (var g = Graphics.FromImage(bmp))
+        IntPtr iconHandle;
+        using (var bmp = new Bitmap(32, 32))
         {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using var brush = new SolidBrush(color);
-            using var pen = new Pen(Color.White, 2.4f) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round };
-            using var path = new GraphicsPath();
-            const float x = 2, w = 28, d = 12;
-            path.AddArc(x, x, d, d, 180, 90);
-            path.AddArc(x + w - d, x, d, d, 270, 90);
-            path.AddArc(x + w - d, x + w - d, d, d, 0, 90);
-            path.AddArc(x, x + w - d, d, d, 90, 90);
-            path.CloseFigure();
-            g.FillPath(brush, path);
-            g.DrawLines(pen, [new PointF(6f, 17f), new PointF(11.5f, 17f), new PointF(14.5f, 9.5f), new PointF(18.5f, 22.5f), new PointF(21f, 16f), new PointF(26f, 16f)]);
+            using (var g = Graphics.FromImage(bmp))
+            using (var brush = new SolidBrush(color))
+            using (var pen = new Pen(Color.White, 2.4f) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round })
+            using (var path = new GraphicsPath())
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                const float x = 2, w = 28, d = 12;
+                path.AddArc(x, x, d, d, 180, 90);
+                path.AddArc(x + w - d, x, d, d, 270, 90);
+                path.AddArc(x + w - d, x + w - d, d, d, 0, 90);
+                path.AddArc(x, x + w - d, d, d, 90, 90);
+                path.CloseFigure();
+                g.FillPath(brush, path);
+                g.DrawLines(pen, [new PointF(6f, 17f), new PointF(11.5f, 17f), new PointF(14.5f, 9.5f), new PointF(18.5f, 22.5f), new PointF(21f, 16f), new PointF(26f, 16f)]);
+            }
+            iconHandle = bmp.GetHicon();
         }
-        return Icon.FromHandle(bmp.GetHicon());
+        return Icon.FromHandle(iconHandle);
     }
 
     [DllImport("user32.dll", SetLastError = true)]
