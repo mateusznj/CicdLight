@@ -99,7 +99,7 @@
   <data name="Choose_Pipelines" xml:space="preserve"><value>Pipeline'y i releasy</value></data>
   <data name="Settings_Poll" xml:space="preserve"><value>Odświeżaj co (sekundy)</value></data>
   <data name="Settings_Notify" xml:space="preserve"><value>Pokazuj powiadomienia</value></data>
-  <data name="Settings_NotifyUnresolvedComments" xml:space="preserve"><value>Powiadamiaj o nowych nierozwiązanych komentarzach w PR-ach</value></data>
+  <data name="Settings_NotifyUnresolvedComments" xml:space="preserve"><value>Nierozwiązane komentarze</value></data>
   <data name="Settings_Mine" xml:space="preserve"><value>Tylko buildy uruchomione przeze mnie</value></data>
   <data name="Settings_Startup" xml:space="preserve"><value>Uruchamiaj z Windows</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Język (dotyczy nowo otwieranych okien)</value></data>

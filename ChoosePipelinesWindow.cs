@@ -6,7 +6,7 @@ namespace CicdLight;
 public sealed class PipelineConfigurationControl : UserControl
 {
     private readonly List<(string Key, CheckBox Box)> _boxes = [];
-    private readonly List<(string Project, CheckBox BuildFailed, CheckBox BuildFixed, CheckBox ReviewRequested)> _notificationBoxes = [];
+    private readonly List<(string Project, CheckBox BuildFailed, CheckBox BuildFixed, CheckBox ReviewRequested, CheckBox UnresolvedComments)> _notificationBoxes = [];
 
     public PipelineConfigurationControl(
         IReadOnlyList<(string Key, string Project, string Text)> items,
@@ -30,12 +30,14 @@ public sealed class PipelineConfigurationControl : UserControl
         notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var headers = new[]
         {
             Strings.Get("Choose_Project"),
             Strings.Get("Settings_NotifyBuildFailed"),
             Strings.Get("Settings_NotifyBuildFixed"),
-            Strings.Get("Settings_NotifyReview")
+            Strings.Get("Settings_NotifyReview"),
+            Strings.Get("Settings_NotifyUnresolvedComments")
         };
         for (var column = 0; column < headers.Length; column++)
         {
@@ -57,7 +59,8 @@ public sealed class PipelineConfigurationControl : UserControl
             var failed = CreateNotificationBox(notificationGrid, project, headers[1], current.BuildFailed, 1, row);
             var fixedBuild = CreateNotificationBox(notificationGrid, project, headers[2], current.BuildFixed, 2, row);
             var review = CreateNotificationBox(notificationGrid, project, headers[3], current.ReviewRequested, 3, row);
-            _notificationBoxes.Add((project, failed, fixedBuild, review));
+            var unresolvedComments = CreateNotificationBox(notificationGrid, project, headers[4], current.UnresolvedComments, 4, row);
+            _notificationBoxes.Add((project, failed, fixedBuild, review, unresolvedComments));
             row++;
         }
         list.Children.Add(notificationGrid);
@@ -133,12 +136,13 @@ public sealed class PipelineConfigurationControl : UserControl
         {
             var chosen = _boxes.Where(b => b.Box.IsChecked == true).Select(b => b.Key).ToList();
             var savedNotifications = new Dictionary<string, ProjectNotificationSettings>(notifications, StringComparer.OrdinalIgnoreCase);
-            foreach (var (project, failed, fixedBuild, review) in _notificationBoxes)
+            foreach (var (project, failed, fixedBuild, review, unresolvedComments) in _notificationBoxes)
                 savedNotifications[project] = new ProjectNotificationSettings
                 {
                     BuildFailed = failed.IsChecked == true,
                     BuildFixed = fixedBuild.IsChecked == true,
-                    ReviewRequested = review.IsChecked == true
+                    ReviewRequested = review.IsChecked == true,
+                    UnresolvedComments = unresolvedComments.IsChecked == true
                 };
             onSaved(chosen, savedNotifications);
         };
