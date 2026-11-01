@@ -20,6 +20,7 @@ public sealed class TrayPopupWindow : Window
     private readonly StackPanel _list = new() { Spacing = 2, Padding = new Thickness(8, 0, 8, 8) };
     private readonly TextBlock _status = new() { FontSize = 12, Opacity = 0.7 };
     private readonly Func<IReadOnlyList<IntegrationConnection>> _getConnections;
+    private readonly Action _exit;
     private readonly Action<string?> _openUrl;
     private readonly IntPtr _hwnd;
 
@@ -30,6 +31,7 @@ public sealed class TrayPopupWindow : Window
         Func<IReadOnlyList<IntegrationConnection>> getConnections, Action exit, Action<string?> openUrl)
     {
         _getConnections = getConnections;
+        _exit = exit;
         _openUrl = openUrl;
         _hwnd = WindowNative.GetWindowHandle(this);
 
@@ -52,7 +54,6 @@ public sealed class TrayPopupWindow : Window
         var flyout = new MenuFlyout();
         flyout.Items.Add(MenuItem(Strings.Get("Menu_Settings"), "\uE713", () => { Hide(); settings(); }));
         flyout.Opening += (_, _) => PopulateConnectionMenus(flyout);
-        flyout.Items.Add(MenuItem(Strings.Get("Menu_Exit"), "\uE711", exit));
         gear.Flyout = flyout;
 
         var title = new StackPanel
@@ -217,7 +218,7 @@ public sealed class TrayPopupWindow : Window
 
     private void PopulateConnectionMenus(MenuFlyout flyout)
     {
-        while (flyout.Items.Count > 2)
+        while (flyout.Items.Count > 1)
             flyout.Items.RemoveAt(1);
 
         var connections = _getConnections();
@@ -230,8 +231,8 @@ public sealed class TrayPopupWindow : Window
             connections.Where(connection => connection.Provider == IntegrationProvider.GitHub),
             connection => GitHubActionsClient.GetRepositoryUrl(connection.Repository));
 
-        if (flyout.Items.Count > 1)
-            flyout.Items.Add(new MenuFlyoutSeparator());
+        flyout.Items.Add(new MenuFlyoutSeparator());
+        flyout.Items.Add(MenuItem(Strings.Get("Menu_Exit"), "\uE711", _exit));
     }
 
     private void AddConnectionMenu(MenuFlyout flyout, string title, string glyph,

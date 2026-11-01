@@ -23,16 +23,37 @@ public sealed class GitHubActionsClient : IIntegrationClient
         try
         {
             var (owner, repository) = ParseRepository(_connection.Repository);
-            var currentUser = string.IsNullOrWhiteSpace(_connection.Credential)
-                ? null
-                : await GetAuthenticatedUserAsync(ct);
-            var buildsTask = GetRunsAsync(owner, repository, ct);
-            var pullRequestsTask = GetPullRequestsAsync(owner, repository, currentUser, ct);
+            var buildsTask = FetchSafelyAsync(() => GetRunsAsync(owner, repository, ct), ct);
+            var pullRequestsTask = FetchSafelyAsync(async () =>
+            {
+                var currentUser = string.IsNullOrWhiteSpace(_connection.Credential)
+                    ? null
+                    : await GetAuthenticatedUserAsync(ct);
+                return await GetPullRequestsAsync(owner, repository, currentUser, ct);
+            }, ct);
             await Task.WhenAll(buildsTask, pullRequestsTask);
-            return new Snapshot(buildsTask.Result, pullRequestsTask.Result, null);
+            var (builds, buildError) = buildsTask.Result;
+            var (pullRequests, pullRequestError) = pullRequestsTask.Result;
+            var errors = new[] { buildError, pullRequestError }.Where(error => error != null).ToList();
+            return new Snapshot(builds, pullRequests,
+                errors.Count == 0 ? null : $"{_connection.DisplayName}: {string.Join("; ", errors)}");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { return Snapshot.Empty($"{_connection.DisplayName}: {ex.Message}"); }
+    }
+
+    private static async Task<(List<T> Items, string? Error)> FetchSafelyAsync<T>(
+        Func<Task<List<T>>> fetch, CancellationToken ct)
+    {
+        try
+        {
+            return (await fetch(), null);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            return ([], ex.Message);
+        }
     }
 
     private async Task<string?> GetAuthenticatedUserAsync(CancellationToken ct)
