@@ -12,7 +12,7 @@
 </div>
 
 <p align="center">
-  <img src="Assets/cicdlight-screenshot.png" alt="CicdLight app with Windows system tray icon — demo data" width="385" />
+  <img src="Assets/cicdlight-screenshot.png" alt="CicdLight app with Windows system tray icon - demo data" width="385" />
 </p>
 
 <p align="center"><sub>Podgląd zawiera dane demonstracyjne. / The screenshot uses demo data.</sub></p>
@@ -29,11 +29,11 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 
 | Ikona | Stan | Opis |
 |---|---|---|
-| ![Zielona ikona statusu](Assets/tray-status-ok.svg) | **Zielony — OK** | Brak aktywnego builda i problemów z PR-ami. |
-| ![Niebieska ikona statusu](Assets/tray-status-running.svg) | **Niebieski — build w toku** | Trwa build lub wydanie. |
-| ![Żółta ikona statusu](Assets/tray-status-warning.svg) | **Żółty — review lub komentarze** | PR oczekuje na Twoje review albo ma nierozwiązane komentarze. |
-| ![Czerwona ikona statusu](Assets/tray-status-failed.svg) | **Czerwony — niepowodzenie** | Build lub wydanie zakończyło się niepowodzeniem. |
-| ![Szara ikona statusu](Assets/tray-status-unknown.svg) | **Szary — brak danych** | Brak konfiguracji lub błąd pobierania statusu. |
+| ![Zielona ikona statusu](Assets/tray-status-ok.svg) | **Zielony - OK** | Brak aktywnego builda i problemów z PR-ami. |
+| ![Niebieska ikona statusu](Assets/tray-status-running.svg) | **Niebieski - build w toku** | Trwa build lub wydanie. |
+| ![Żółta ikona statusu](Assets/tray-status-warning.svg) | **Żółty - review lub komentarze** | PR oczekuje na Twoje review albo ma nierozwiązane komentarze. |
+| ![Czerwona ikona statusu](Assets/tray-status-failed.svg) | **Czerwony - niepowodzenie** | Build lub wydanie zakończyło się niepowodzeniem. |
+| ![Szara ikona statusu](Assets/tray-status-unknown.svg) | **Szary - brak danych** | Brak konfiguracji lub błąd pobierania statusu. |
 
 - **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y Azure DevOps i GitHub oczekujące na review oraz Twoje PR-y. Przy PR-ach wyświetlana jest liczba nierozwiązanych wątków komentarzy. Kliknięcie elementu otwiera go w przeglądarce.
 - **Połączenia:** lista repozytoriów GitHub i projektów Azure DevOps, każde z osobnym kluczem i wyborem obserwowanych pipeline'ów. Menu pozwala otworzyć osobno każdy skonfigurowany projekt Azure DevOps lub repozytorium GitHub. Sekret jest szyfrowany DPAPI (`CurrentUser`).
@@ -77,7 +77,7 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 - `Build (Read)`
 - `Code (Read)`
 - `Release (Read)`
-- `Project and Team (Read)` — potrzebne, gdy lista projektów w ustawieniach jest pusta.
+- `Project and Team (Read)` - potrzebne, gdy lista projektów w ustawieniach jest pusta.
 
 Fine-grained token GitHub dla prywatnego repozytorium wymaga **Actions: Read** i **Pull requests: Read**.
 
@@ -97,11 +97,11 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 
 | Icon | Status | Description |
 |---|---|---|
-| ![Green status icon](Assets/tray-status-ok.svg) | **Green — OK** | No active builds or PR issues. |
-| ![Blue status icon](Assets/tray-status-running.svg) | **Blue — build in progress** | A build or release is running. |
-| ![Yellow status icon](Assets/tray-status-warning.svg) | **Yellow — review or comments** | A PR is awaiting your review or has unresolved comments. |
-| ![Red status icon](Assets/tray-status-failed.svg) | **Red — failed** | A build or release has failed. |
-| ![Gray status icon](Assets/tray-status-unknown.svg) | **Gray — no status** | No configuration or a status retrieval error. |
+| ![Green status icon](Assets/tray-status-ok.svg) | **Green - OK** | No active builds or PR issues. |
+| ![Blue status icon](Assets/tray-status-running.svg) | **Blue - build in progress** | A build or release is running. |
+| ![Yellow status icon](Assets/tray-status-warning.svg) | **Yellow - review or comments** | A PR is awaiting your review or has unresolved comments. |
+| ![Red status icon](Assets/tray-status-failed.svg) | **Red - failed** | A build or release has failed. |
+| ![Gray status icon](Assets/tray-status-unknown.svg) | **Gray - no status** | No configuration or a status retrieval error. |
 
 - **At-a-glance overview:** recent builds (pipeline + branch), releases, Azure DevOps and GitHub PRs awaiting review and your own PRs. Each PR shows its unresolved comment thread count. Click an item to open it in the browser.
 - **Connections:** a list of GitHub repositories and Azure DevOps projects, each with its own credential and selected pipelines. The menu can open each configured Azure DevOps project or GitHub repository separately. Secrets are protected with Windows DPAPI (`CurrentUser`).
@@ -145,7 +145,7 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 - `Build (Read)`
 - `Code (Read)`
 - `Release (Read)`
-- `Project and Team (Read)` — required when the project list in settings is empty.
+- `Project and Team (Read)` - required when the project list in settings is empty.
 
 `Work Items` is not required.
 
