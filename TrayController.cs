@@ -229,15 +229,19 @@ public sealed class TrayController : IDisposable
         TrayPopupWindow.BringToFront(_settingsWindow);
     }
 
-    private IReadOnlyList<string> GetProjects(IntegrationConnection connection) =>
-        _all.Builds.Where(build => build.ConnectionId == connection.Id).Select(build => build.Project)
+    private IReadOnlyList<string> GetProjects(IntegrationConnection connection)
+    {
+        if (connection.Provider == IntegrationProvider.GitHub)
+            return [GitHubActionsClient.GetRepositoryName(connection.Repository)];
+
+        return _all.Builds.Where(build => build.ConnectionId == connection.Id).Select(build => build.Project)
             .Concat(_all.Releases.Where(release => release.ConnectionId == connection.Id).Select(release => release.Project))
             .Concat(_all.PullRequests.Where(pullRequest => pullRequest.ConnectionId == connection.Id).Select(pullRequest => pullRequest.Project))
             .Concat(string.IsNullOrWhiteSpace(connection.Project) ? [] : [connection.Project])
-            .Concat(connection.Provider == IntegrationProvider.GitHub ? [connection.Repository] : [])
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(project => project, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+    }
 
     private void ShowTestNotification()
     {
