@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 
 namespace CicdLight;
@@ -24,13 +25,7 @@ public sealed class GitHubActionsClient : IIntegrationClient
         {
             var (owner, repository) = ParseRepository(_connection.Repository);
             var buildsTask = FetchSafelyAsync(() => GetRunsAsync(owner, repository, ct), ct);
-            var pullRequestsTask = FetchSafelyAsync(async () =>
-            {
-                var currentUser = string.IsNullOrWhiteSpace(_connection.Credential)
-                    ? null
-                    : await GetAuthenticatedUserAsync(ct);
-                return await GetPullRequestsAsync(owner, repository, currentUser, ct);
-            }, ct);
+            var pullRequestsTask = FetchPullRequestsSafelyAsync(owner, repository, ct);
             await Task.WhenAll(buildsTask, pullRequestsTask);
             var (builds, buildError) = buildsTask.Result;
             var (pullRequests, pullRequestError) = pullRequestsTask.Result;
@@ -56,19 +51,36 @@ public sealed class GitHubActionsClient : IIntegrationClient
         }
     }
 
+    private async Task<(List<PullRequestInfo> Items, string? Error)> FetchPullRequestsSafelyAsync(
+        string owner, string repository, CancellationToken ct)
+    {
+        try
+        {
+            var currentUser = string.IsNullOrWhiteSpace(_connection.Credential)
+                ? null
+                : await GetAuthenticatedUserAsync(ct);
+            return await GetPullRequestsAsync(owner, repository, currentUser, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            return ([], ex.Message);
+        }
+    }
+
     private async Task<string?> GetAuthenticatedUserAsync(CancellationToken ct)
     {
         var json = await GetJsonAsync("https://api.github.com/user", ct);
         return json.GetProperty("login").GetString();
     }
 
-    private async Task<List<PullRequestInfo>> GetPullRequestsAsync(
+    private async Task<(List<PullRequestInfo> PullRequests, string? Error)> GetPullRequestsAsync(
         string owner, string repository, string? currentUser, CancellationToken ct)
     {
         var url = $"https://api.github.com/repos/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repository)}/pulls?state=open&per_page=100";
         var json = await GetJsonAsync(url, ct);
         var fullRepository = $"{owner}/{repository}";
-        return json.EnumerateArray().Select(pullRequest =>
+        var pullRequests = json.EnumerateArray().Select(pullRequest =>
         {
             var author = pullRequest.GetProperty("user").GetProperty("login").GetString() ?? "";
             var isMine = currentUser != null && author.Equals(currentUser, StringComparison.OrdinalIgnoreCase);
@@ -87,6 +99,81 @@ public sealed class GitHubActionsClient : IIntegrationClient
                 pullRequest.GetProperty("html_url").GetString() ?? "",
                 ConnectionId: _connection.Id);
         }).ToList();
+
+        if (currentUser == null)
+            return (pullRequests, null);
+
+        var visiblePullRequests = pullRequests.Where(pullRequest => pullRequest.NeedsMyReview).Take(5)
+            .Concat(pullRequests.Where(pullRequest => pullRequest.IsMine).Take(3))
+            .DistinctBy(pullRequest => pullRequest.Id)
+            .ToList();
+        var commentChecks = await Task.WhenAll(visiblePullRequests.Select(async pullRequest =>
+        {
+            try
+            {
+                var count = await CountUnresolvedReviewThreadsAsync(owner, repository, pullRequest.Id, ct);
+                return (PullRequest: pullRequest, Count: count, Error: (string?)null);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                return (PullRequest: pullRequest, Count: 0, Error: ex.Message);
+            }
+        }));
+        var commentCounts = commentChecks.ToDictionary(check => check.PullRequest.Id, check => check.Count);
+        var errors = commentChecks.Where(check => check.Error != null).Select(check => check.Error!).Distinct().ToList();
+        pullRequests = pullRequests.Select(pullRequest => commentCounts.TryGetValue(pullRequest.Id, out var count)
+            ? pullRequest with { UnresolvedCommentCount = count }
+            : pullRequest).ToList();
+        return (pullRequests, errors.Count == 0 ? null : string.Join("; ", errors));
+    }
+
+    private async Task<int> CountUnresolvedReviewThreadsAsync(
+        string owner, string repository, int pullRequestNumber, CancellationToken ct)
+    {
+        const string query = """
+            query($owner: String!, $name: String!, $number: Int!, $after: String) {
+              repository(owner: $owner, name: $name) {
+                pullRequest(number: $number) {
+                  reviewThreads(first: 100, after: $after) {
+                    nodes { isResolved }
+                    pageInfo { hasNextPage endCursor }
+                  }
+                }
+              }
+            }
+            """;
+
+        var count = 0;
+        string? after = null;
+        do
+        {
+            var body = JsonSerializer.Serialize(new
+            {
+                query,
+                variables = new { owner, name = repository, number = pullRequestNumber, after }
+            });
+            using var response = await _http.PostAsync("https://api.github.com/graphql",
+                new StringContent(body, Encoding.UTF8, "application/json"), ct);
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+            var root = document.RootElement;
+            if (root.TryGetProperty("errors", out var graphQlErrors))
+                throw new InvalidOperationException(string.Join("; ",
+                    graphQlErrors.EnumerateArray().Select(error => error.GetProperty("message").GetString())));
+
+            var threads = root.GetProperty("data").GetProperty("repository")
+                .GetProperty("pullRequest").GetProperty("reviewThreads");
+            count += threads.GetProperty("nodes").EnumerateArray()
+                .Count(thread => !thread.GetProperty("isResolved").GetBoolean());
+            var pageInfo = threads.GetProperty("pageInfo");
+            if (!pageInfo.GetProperty("hasNextPage").GetBoolean()) break;
+            after = pageInfo.GetProperty("endCursor").GetString()
+                ?? throw new InvalidOperationException("GitHub did not return a cursor for the next review-thread page.");
+        } while (true);
+
+        return count;
     }
 
     private async Task<List<BuildInfo>> GetRunsAsync(string owner, string repository, CancellationToken ct)
