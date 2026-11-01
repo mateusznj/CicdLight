@@ -256,7 +256,10 @@ public sealed class SettingsWindow : Window
                     DefaultButton = ContentDialogButton.Primary,
                     XamlRoot = _aboutPage.XamlRoot
                 };
-                if (await dialog.ShowAsync() == ContentDialogResult.Primary) OpenUrl(releaseUrl);
+                if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                {
+                    OpenUrl(releaseUrl);
+                }
             }
             else
             {
@@ -287,8 +290,10 @@ public sealed class SettingsWindow : Window
         await dialog.ShowAsync();
     }
 
-    private static void OpenUrl(string url) =>
+    private static void OpenUrl(string url)
+    {
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
 
     private void RenderPipelineHub()
     {
