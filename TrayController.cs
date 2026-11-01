@@ -36,7 +36,7 @@ public sealed class TrayController : IDisposable
         };
         _tray.ForceCreate();
         _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings,
-            OpenDefaultUrl, Exit, OpenUrl);
+            () => _settings.Connections, Exit, OpenUrl);
         _tray.TrayIcon.MessageWindow.MouseEventReceived += (_, e) =>
         {
             switch (e.MouseEvent)
@@ -220,19 +220,6 @@ public sealed class TrayController : IDisposable
     {
         if (!string.IsNullOrEmpty(url))
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-    }
-
-    private void OpenDefaultUrl()
-    {
-        var azure = _settings.Connections.FirstOrDefault(connection => connection.Provider == IntegrationProvider.AzureDevOps);
-        if (azure != null)
-        {
-            OpenUrl(azure.OrganizationUrl);
-            return;
-        }
-
-        var github = _settings.Connections.FirstOrDefault(connection => connection.Provider == IntegrationProvider.GitHub);
-        if (github != null) OpenUrl(GitHubActionsClient.GetRepositoryUrl(github.Repository));
     }
 
     private static Icon MakeIcon(Health health)

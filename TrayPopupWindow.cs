@@ -19,14 +19,17 @@ public sealed class TrayPopupWindow : Window
 
     private readonly StackPanel _list = new() { Spacing = 2, Padding = new Thickness(8, 0, 8, 8) };
     private readonly TextBlock _status = new() { FontSize = 12, Opacity = 0.7 };
+    private readonly Func<IReadOnlyList<IntegrationConnection>> _getConnections;
     private readonly Action<string?> _openUrl;
     private readonly IntPtr _hwnd;
 
     public bool IsVisible { get; private set; }
     public DateTime HiddenAtUtc { get; private set; } = DateTime.MinValue;
 
-    public TrayPopupWindow(Action refresh, Action settings, Action openOrg, Action exit, Action<string?> openUrl)
+    public TrayPopupWindow(Action refresh, Action settings,
+        Func<IReadOnlyList<IntegrationConnection>> getConnections, Action exit, Action<string?> openUrl)
     {
+        _getConnections = getConnections;
         _openUrl = openUrl;
         _hwnd = WindowNative.GetWindowHandle(this);
 
@@ -48,8 +51,7 @@ public sealed class TrayPopupWindow : Window
         var gear = new Button { Content = new FontIcon { Glyph = "\uE713", FontSize = 16 }, Style = subtle };
         var flyout = new MenuFlyout();
         flyout.Items.Add(MenuItem(Strings.Get("Menu_Settings"), "\uE713", () => { Hide(); settings(); }));
-        flyout.Items.Add(MenuItem(Strings.Get("Menu_OpenOrg"), "\uE774", () => { Hide(); openOrg(); }));
-        flyout.Items.Add(new MenuFlyoutSeparator());
+        flyout.Opening += (_, _) => PopulateConnectionMenus(flyout);
         flyout.Items.Add(MenuItem(Strings.Get("Menu_Exit"), "\uE711", exit));
         gear.Flyout = flyout;
 
@@ -211,6 +213,45 @@ public sealed class TrayPopupWindow : Window
         var item = new MenuFlyoutItem { Text = text, Icon = new FontIcon { Glyph = glyph } };
         item.Click += (_, _) => onClick();
         return item;
+    }
+
+    private void PopulateConnectionMenus(MenuFlyout flyout)
+    {
+        while (flyout.Items.Count > 2)
+            flyout.Items.RemoveAt(1);
+
+        var connections = _getConnections();
+        AddConnectionMenu(flyout, Strings.Get("Menu_OpenAzureDevOps"), "\uE774",
+            connections.Where(connection => connection.Provider == IntegrationProvider.AzureDevOps),
+            connection => string.IsNullOrWhiteSpace(connection.Project)
+                ? connection.OrganizationUrl
+                : $"{connection.OrganizationUrl}/{Uri.EscapeDataString(connection.Project)}");
+        AddConnectionMenu(flyout, Strings.Get("Menu_OpenGitHub"), "\uE8A7",
+            connections.Where(connection => connection.Provider == IntegrationProvider.GitHub),
+            connection => GitHubActionsClient.GetRepositoryUrl(connection.Repository));
+
+        if (flyout.Items.Count > 1)
+            flyout.Items.Add(new MenuFlyoutSeparator());
+    }
+
+    private void AddConnectionMenu(MenuFlyout flyout, string title, string glyph,
+        IEnumerable<IntegrationConnection> connections, Func<IntegrationConnection, string> getUrl)
+    {
+        var items = connections.ToList();
+        if (items.Count == 0) return;
+
+        var providerMenu = new MenuFlyoutSubItem
+        {
+            Text = title,
+            Icon = new FontIcon { Glyph = glyph }
+        };
+        foreach (var connection in items)
+        {
+            var item = new MenuFlyoutItem { Text = connection.DisplayName };
+            item.Click += (_, _) => { Hide(); _openUrl(getUrl(connection)); };
+            providerMenu.Items.Add(item);
+        }
+        flyout.Items.Add(providerMenu);
     }
 
     private static class Glyph
