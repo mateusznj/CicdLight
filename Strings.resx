@@ -68,7 +68,7 @@
   <data name="Connection_RepositoryPlaceholder" xml:space="preserve"><value>owner/repository or GitHub URL</value></data>
   <data name="Connection_AzurePat" xml:space="preserve"><value>Personal Access Token</value></data>
   <data name="Connection_GitHubToken" xml:space="preserve"><value>GitHub token</value></data>
-  <data name="Connection_GitHubTokenOptional" xml:space="preserve"><value>Optional for public repositories</value></data>
+  <data name="Connection_GitHubTokenOptional" xml:space="preserve"><value>Optional for public Actions; required to identify your PRs</value></data>
   <data name="Connection_LeaveCredentialEmpty" xml:space="preserve"><value>Leave empty to keep the current token</value></data>
   <data name="Connection_RequiredFields" xml:space="preserve"><value>Complete the required connection fields.</value></data>
   <data name="Connection_AlreadyExists" xml:space="preserve"><value>This connection is already in the list.</value></data>

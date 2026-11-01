@@ -26,9 +26,10 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 ### Funkcje
 
 - **Ikona w zasobniku systemowym (tray):** zielony — OK, niebieski — build w toku, żółty — PR oczekuje na Twoje review, czerwony — nieudany build, szary — błąd lub brak konfiguracji.
-- **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y z Azure DevOps oczekujące na review oraz Twoje PR-y. Kliknięcie elementu otwiera go w przeglądarce; PR-y GitHub nie są jeszcze obsługiwane.
+- **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y Azure DevOps i GitHub oczekujące na review oraz Twoje PR-y. Kliknięcie elementu otwiera go w przeglądarce.
 - **Połączenia:** lista repozytoriów GitHub i projektów Azure DevOps, każde z osobnym kluczem i wyborem obserwowanych pipeline'ów. Menu pozwala otworzyć osobno każdy skonfigurowany projekt Azure DevOps lub repozytorium GitHub. Sekret jest szyfrowany DPAPI (`CurrentUser`).
 - **GitHub Actions:** statusy ostatnich uruchomień wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; prywatne używają tokenu przypisanego do danego repozytorium.
+- **GitHub pull requests:** otwarte PR-y przypisane do zalogowanego użytkownika jako autora lub osoby proszonej o review. Wymagany jest token GitHub, aby rozpoznać bieżącego użytkownika; do repozytoriów prywatnych token jest wymagany również do odczytu PR-ów.
 - **Aktualizacje:** ręczne sprawdzenie najnowszego stabilnego wydania GitHub i otwarcie strony wydania; aplikacja nie pobiera ani nie instaluje aktualizacji automatycznie.
 - **Powiadomienia systemowe:** globalny wyłącznik oraz checkboxy dla nieudanych i naprawionych buildów oraz nowych próśb o review w tabeli projektów w oknie wyboru pipeline'ów.
 - **Ochrona tokenu PAT:** szyfrowanie DPAPI (`CurrentUser`); ustawienia zapisane w `%APPDATA%\CicdLight\settings.json`.
@@ -40,7 +41,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 2. Pobierz odpowiedni instalator z sekcji **Assets** i uruchom go.
 3. Uruchom CicdLight i otwórz **Settings**. Wybierz dostawcę, podaj organizację i projekt Azure DevOps wraz z PAT albo repozytorium GitHub wraz z opcjonalnym tokenem. Każde połączenie dodaj osobno, a potem wybierz obserwowane pipeline'y przy tym wpisie.
 
-Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tokena z uprawnieniem **Actions: Read** i dostępem do wybranych repozytoriów. Token dla publicznych repozytoriów jest opcjonalny.
+Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tokena z uprawnieniem **Actions: Read**. Do odczytu PR-ów token musi mieć uprawnienie **Pull requests: Read**; token jest też potrzebny do rozpoznania Twoich PR-ów i próśb o review. Dostęp do publicznych uruchomień Actions nie wymaga tokenu.
 
 > Pliki instalacyjne znajdują się również w katalogu [`artifacts`](artifacts), ale zalecanym miejscem pobierania opublikowanych wersji jest zakładka **Releases**.
 
@@ -66,9 +67,10 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 
 - `Build (Read)`
 - `Code (Read)`
-
 - `Release (Read)`
 - `Project and Team (Read)` — potrzebne, gdy lista projektów w ustawieniach jest pusta.
+
+Fine-grained token GitHub dla prywatnego repozytorium wymaga **Actions: Read** i **Pull requests: Read**.
 
 ### Planowane możliwości
 
@@ -83,9 +85,10 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 ### Features
 
 - **System tray status:** green — OK, blue — build in progress, yellow — PR awaiting your review, red — failed build, gray — error or missing configuration.
-- **At-a-glance overview:** recent builds (pipeline + branch), releases, Azure DevOps PRs awaiting review and your own PRs. Click an item to open it in the browser; GitHub pull requests are not supported yet.
+- **At-a-glance overview:** recent builds (pipeline + branch), releases, Azure DevOps and GitHub PRs awaiting review and your own PRs. Click an item to open it in the browser.
 - **Connections:** a list of GitHub repositories and Azure DevOps projects, each with its own credential and selected pipelines. The menu can open each configured Azure DevOps project or GitHub repository separately. Secrets are protected with Windows DPAPI (`CurrentUser`).
 - **GitHub Actions:** recent workflow runs shown alongside Azure DevOps builds. Public repositories need no token; private repositories use a token stored on that repository's connection.
+- **GitHub pull requests:** open PRs authored by the authenticated user or requesting their review. A GitHub token is required to identify the current user; private repositories also require a token to read PRs.
 - **Updates:** manually checks the latest stable GitHub release and opens its release page; the app does not download or install updates automatically.
 - **System notifications:** a global switch and per-project checkboxes for failed and recovered builds and new review requests in the pipeline selection window.
 - **PAT protection:** Windows DPAPI encryption (`CurrentUser`); settings stored in `%APPDATA%\CicdLight\settings.json`.
@@ -97,7 +100,7 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 2. Download the appropriate installer from **Assets** and run it.
 3. Open **Settings** and choose a provider. Add each Azure DevOps organization/project with its PAT or each GitHub repository with its optional token as a separate connection. Then choose the pipelines to monitor from that connection's row.
 
-To read Actions runs in private repositories, use a fine-grained token with **Actions: Read** access to the selected repositories. A token is optional for public repositories.
+For private repositories, use a fine-grained token with **Actions: Read** and **Pull requests: Read** access. A token is also required to identify your own PRs and review requests. Public Actions runs can be read without a token.
 
 > Installer files are also available in [`artifacts`](artifacts), but **Releases** is the recommended location for downloading published versions.
 
@@ -127,6 +130,8 @@ dotnet publish -c Release -r win-x64 --self-contained -o publish
 - `Project and Team (Read)` — required when the project list in settings is empty.
 
 `Work Items` is not required.
+
+Fine-grained GitHub tokens for private repositories require **Actions: Read** and **Pull requests: Read**.
 
 ### Roadmap ideas
 

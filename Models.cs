@@ -87,7 +87,12 @@ public record ReleaseInfo(
 public record PullRequestInfo(
     int Id, string Project, string Repository, string Title, string Author,
     bool IsMine, bool NeedsMyReview, string Url,
-    string RepositoryId = "", bool HasUnresolvedComments = false, string ConnectionId = "");
+    string RepositoryId = "", bool HasUnresolvedComments = false, string ConnectionId = "")
+{
+    public string Key => string.IsNullOrEmpty(ConnectionId)
+        ? $"P:{Project}:{Id}"
+        : $"P:{ConnectionId}:{Project}:{Id}";
+}
 
 public record Snapshot(
     IReadOnlyList<BuildInfo> Builds,
