@@ -154,13 +154,12 @@ public sealed class TrayController : IDisposable
             foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Key) && GetProjectNotifications(p.Project).ReviewRequested))
                 Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
 
-            if (_settings.NotifyUnresolvedComments)
-            {
-                foreach (var p in s.PullRequests.Where(p => p.UnresolvedCommentCount > _previousUnresolvedComments.GetValueOrDefault(p.Key)))
-                    Toast(Strings.Get("Toast_UnresolvedComment"),
-                        Strings.Format("Toast_UnresolvedCommentText", p.Id, p.Title, p.UnresolvedCommentCount),
-                        p.Url, NotificationIcon.Info);
-            }
+            foreach (var p in s.PullRequests.Where(p =>
+                         p.UnresolvedCommentCount > _previousUnresolvedComments.GetValueOrDefault(p.Key) &&
+                         GetProjectNotifications(p.Project).UnresolvedComments))
+                Toast(Strings.Get("Toast_UnresolvedComment"),
+                    Strings.Format("Toast_UnresolvedCommentText", p.Id, p.Title, p.UnresolvedCommentCount),
+                    p.Url, NotificationIcon.Info);
         }
 
         _previousBuilds = builds;
@@ -182,7 +181,8 @@ public sealed class TrayController : IDisposable
         {
             BuildFailed = _settings.NotifyBuildFailed,
             BuildFixed = _settings.NotifyBuildFixed,
-            ReviewRequested = _settings.NotifyReviewRequested
+            ReviewRequested = _settings.NotifyReviewRequested,
+            UnresolvedComments = true
         };
     }
 
@@ -224,10 +224,20 @@ public sealed class TrayController : IDisposable
             _settings = AppSettings.Load();
             ApplySettings();
             _settingsWindow?.UpdateSettings(_settings);
-        }, GetPipelineItems);
+        }, GetPipelineItems, GetProjects);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         TrayPopupWindow.BringToFront(_settingsWindow);
     }
+
+    private IReadOnlyList<string> GetProjects(IntegrationConnection connection) =>
+        _all.Builds.Where(build => build.ConnectionId == connection.Id).Select(build => build.Project)
+            .Concat(_all.Releases.Where(release => release.ConnectionId == connection.Id).Select(release => release.Project))
+            .Concat(_all.PullRequests.Where(pullRequest => pullRequest.ConnectionId == connection.Id).Select(pullRequest => pullRequest.Project))
+            .Concat(string.IsNullOrWhiteSpace(connection.Project) ? [] : [connection.Project])
+            .Concat(connection.Provider == IntegrationProvider.GitHub ? [connection.Repository] : [])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(project => project, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
 
     private static void OpenUrl(string? url)
     {

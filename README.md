@@ -31,7 +31,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 - **GitHub Actions:** statusy ostatnich uruchomień wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; prywatne używają tokenu przypisanego do danego repozytorium.
 - **GitHub pull requests:** otwarte PR-y przypisane do zalogowanego użytkownika jako autora lub osoby proszonej o review. Wymagany jest token GitHub, aby rozpoznać bieżącego użytkownika; do repozytoriów prywatnych token jest wymagany również do odczytu PR-ów.
 - **Aktualizacje:** ręczne sprawdzenie najnowszego stabilnego wydania GitHub i otwarcie strony wydania; aplikacja nie pobiera ani nie instaluje aktualizacji automatycznie.
-- **Powiadomienia systemowe:** globalny wyłącznik oraz osobne ustawienie powiadomień o nowych nierozwiązanych komentarzach w PR-ach. Nieudane i naprawione buildy oraz nowe prośby o review można konfigurować w tabeli projektów w oknie wyboru pipeline'ów.
+- **Powiadomienia systemowe:** globalny wyłącznik oraz ustawienia per projekt dla nieudanych i naprawionych buildów, nowych próśb o review oraz nierozwiązanych komentarzy w PR-ach.
 - **Ochrona tokenu PAT:** szyfrowanie DPAPI (`CurrentUser`); ustawienia zapisane w `%APPDATA%\CicdLight\settings.json`.
 - **Integracja z Windows:** opcjonalny autostart oraz uruchamianie tylko jednej instancji.
 
@@ -90,7 +90,7 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 - **GitHub Actions:** recent workflow runs shown alongside Azure DevOps builds. Public repositories need no token; private repositories use a token stored on that repository's connection.
 - **GitHub pull requests:** open PRs authored by the authenticated user or requesting their review. A GitHub token is required to identify the current user; private repositories also require a token to read PRs.
 - **Updates:** manually checks the latest stable GitHub release and opens its release page; the app does not download or install updates automatically.
-- **System notifications:** a global switch and a separate option for new unresolved PR comments. Failed and recovered builds and new review requests can be configured per project in the pipeline selection window.
+- **System notifications:** a global switch and per-project options for failed and recovered builds, new review requests, and unresolved PR comments.
 - **PAT protection:** Windows DPAPI encryption (`CurrentUser`); settings stored in `%APPDATA%\CicdLight\settings.json`.
 - **Windows integration:** optional startup with Windows and single-instance execution.
 
