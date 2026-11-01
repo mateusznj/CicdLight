@@ -22,26 +22,71 @@ public sealed class GitHubActionsClient : IIntegrationClient
     {
         try
         {
-            var builds = await GetRunsAsync(_connection.Repository, ct);
-            return new Snapshot(builds, [], null);
+            var (owner, repository) = ParseRepository(_connection.Repository);
+            var currentUser = string.IsNullOrWhiteSpace(_connection.Credential)
+                ? null
+                : await GetAuthenticatedUserAsync(ct);
+            var buildsTask = GetRunsAsync(owner, repository, ct);
+            var pullRequestsTask = GetPullRequestsAsync(owner, repository, currentUser, ct);
+            await Task.WhenAll(buildsTask, pullRequestsTask);
+            return new Snapshot(buildsTask.Result, pullRequestsTask.Result, null);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { return Snapshot.Empty($"{_connection.DisplayName}: {ex.Message}"); }
     }
 
-    private async Task<List<BuildInfo>> GetRunsAsync(string repository, CancellationToken ct)
+    private async Task<string?> GetAuthenticatedUserAsync(CancellationToken ct)
     {
-        var (owner, name) = ParseRepository(repository);
-        var url = $"https://api.github.com/repos/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(name)}/actions/runs?per_page=100";
+        var json = await GetJsonAsync("https://api.github.com/user", ct);
+        return json.GetProperty("login").GetString();
+    }
+
+    private async Task<List<PullRequestInfo>> GetPullRequestsAsync(
+        string owner, string repository, string? currentUser, CancellationToken ct)
+    {
+        var url = $"https://api.github.com/repos/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repository)}/pulls?state=open&per_page=100";
+        var json = await GetJsonAsync(url, ct);
+        var fullRepository = $"{owner}/{repository}";
+        return json.EnumerateArray().Select(pullRequest =>
+        {
+            var author = pullRequest.GetProperty("user").GetProperty("login").GetString() ?? "";
+            var isMine = currentUser != null && author.Equals(currentUser, StringComparison.OrdinalIgnoreCase);
+            var needsMyReview = currentUser != null &&
+                pullRequest.GetProperty("requested_reviewers").EnumerateArray()
+                    .Any(reviewer => string.Equals(
+                        reviewer.GetProperty("login").GetString(), currentUser, StringComparison.OrdinalIgnoreCase));
+            return new PullRequestInfo(
+                pullRequest.GetProperty("number").GetInt32(),
+                fullRepository,
+                fullRepository,
+                pullRequest.GetProperty("title").GetString() ?? "",
+                author,
+                isMine,
+                needsMyReview,
+                pullRequest.GetProperty("html_url").GetString() ?? "",
+                ConnectionId: _connection.Id);
+        }).ToList();
+    }
+
+    private async Task<List<BuildInfo>> GetRunsAsync(string owner, string repository, CancellationToken ct)
+    {
+        var fullRepository = $"{owner}/{repository}";
+        var url = $"https://api.github.com/repos/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repository)}/actions/runs?per_page=100";
+        var json = await GetJsonAsync(url, ct);
+        return json.GetProperty("workflow_runs").EnumerateArray()
+            .Select(run => ToBuild(fullRepository, run))
+            .GroupBy(build => build.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.OrderByDescending(build => build.Time ?? DateTimeOffset.MinValue).First())
+            .ToList();
+    }
+
+    private async Task<JsonElement> GetJsonAsync(string url, CancellationToken ct)
+    {
         using var response = await _http.GetAsync(url, ct);
         response.EnsureSuccessStatusCode();
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
-        return document.RootElement.GetProperty("workflow_runs").EnumerateArray()
-            .Select(run => ToBuild(repository, run))
-            .GroupBy(build => build.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.OrderByDescending(build => build.Time ?? DateTimeOffset.MinValue).First())
-            .ToList();
+        return document.RootElement.Clone();
     }
 
     private BuildInfo ToBuild(string repository, JsonElement run)

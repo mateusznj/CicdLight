@@ -21,7 +21,7 @@ public sealed class TrayController : IDisposable
     private Snapshot _snapshot = Snapshot.Empty();
     private Snapshot _all = Snapshot.Empty();
     private Dictionary<string, BuildInfo>? _previousBuilds;
-    private HashSet<int>? _previousReviewPrs;
+    private HashSet<string>? _previousReviewPrs;
     private string? _notificationUrl;
     private bool _refreshing;
     private SettingsWindow? _settingsWindow;
@@ -130,7 +130,7 @@ public sealed class TrayController : IDisposable
     private void Notify(Snapshot s)
     {
         var builds = s.Builds.ToDictionary(b => b.Key);
-        var reviewPrs = s.PullRequests.Where(p => p.NeedsMyReview).Select(p => p.Id).ToHashSet();
+        var reviewPrs = s.PullRequests.Where(p => p.NeedsMyReview).Select(p => p.Key).ToHashSet();
 
         // First successful poll only establishes the baseline.
         if (_previousBuilds != null && _previousReviewPrs != null && _settings.Notifications)
@@ -147,7 +147,7 @@ public sealed class TrayController : IDisposable
                     Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, NotificationIcon.Info);
             }
 
-            foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Id) && GetProjectNotifications(p.Project).ReviewRequested))
+            foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Key) && GetProjectNotifications(p.Project).ReviewRequested))
                 Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
         }
 
