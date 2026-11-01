@@ -425,8 +425,10 @@ public sealed class SettingsWindow : Window
             var remove = new Button
             {
                 Content = new FontIcon { Glyph = "\uE74D", FontSize = 14 },
+                Height = 32,
                 MinWidth = 36,
-                Padding = new Thickness(6, 2, 6, 2)
+                Padding = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Center
             };
             ToolTipService.SetToolTip(remove, Strings.Get("Button_Remove"));
             remove.Click += async (_, _) => await ConfirmRemoveConnectionAsync(connection);
