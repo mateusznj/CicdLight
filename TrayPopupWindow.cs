@@ -138,12 +138,12 @@ public sealed class TrayPopupWindow : Window
         var review = s.PullRequests.Where(p => p.NeedsMyReview).Take(5).ToList();
         if (review.Count > 0) AddHeader(Strings.Get("Section_Review"), $"{reviews}");
         foreach (var p in review)
-            AddRow(Glyph.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.HasUnresolvedComments);
+            AddRow(Glyph.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.UnresolvedCommentCount);
 
         var mine = s.PullRequests.Where(p => p.IsMine).Take(3).ToList();
         if (mine.Count > 0) AddHeader(Strings.Get("Section_MyPrs"), null);
         foreach (var p in mine)
-            AddRow(Glyph.Pr, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project, p.HasUnresolvedComments);
+            AddRow(Glyph.Pr, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project, p.UnresolvedCommentCount);
 
         if (_list.Children.Count == 0)
             _list.Children.Add(new TextBlock { Text = s.Error ?? Strings.Get("Popup_Nothing"), Margin = new Thickness(8), TextWrapping = TextWrapping.Wrap, Opacity = 0.7 });
@@ -155,7 +155,7 @@ public sealed class TrayPopupWindow : Window
         _list.Children.Add(tb);
     }
 
-    private void AddRow((string Glyph, Windows.UI.Color Color) icon, string title, string subtitle, string time, string url, string tooltip, bool showCommentsIcon = false)
+    private void AddRow((string Glyph, Windows.UI.Color Color) icon, string title, string subtitle, string time, string url, string tooltip, int unresolvedCommentCount = 0)
     {
         var grid = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Stretch };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -176,18 +176,33 @@ public sealed class TrayPopupWindow : Window
         Grid.SetColumn(texts, 1);
         grid.Children.Add(texts);
 
-        if (showCommentsIcon)
+        if (unresolvedCommentCount > 0)
         {
-            var commentsIcon = new FontIcon
+            var comments = new StackPanel
             {
-                Glyph = Glyph.Comments.Item1,
-                FontSize = 16,
-                Foreground = new SolidColorBrush(Glyph.Comments.Item2),
-                VerticalAlignment = VerticalAlignment.Center
+                Orientation = Orientation.Horizontal,
+                Spacing = 4,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new FontIcon
+                    {
+                        Glyph = Glyph.Comments.Item1,
+                        FontSize = 16,
+                        Foreground = new SolidColorBrush(Glyph.Comments.Item2),
+                        VerticalAlignment = VerticalAlignment.Center
+                    },
+                    new TextBlock
+                    {
+                        Text = unresolvedCommentCount.ToString(),
+                        FontSize = 12,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                }
             };
-            ToolTipService.SetToolTip(commentsIcon, Strings.Get("Popup_UnresolvedComments"));
-            Grid.SetColumn(commentsIcon, 2);
-            grid.Children.Add(commentsIcon);
+            ToolTipService.SetToolTip(comments, Strings.Format("Popup_UnresolvedCommentsCount", unresolvedCommentCount));
+            Grid.SetColumn(comments, 2);
+            grid.Children.Add(comments);
         }
         else
         {
