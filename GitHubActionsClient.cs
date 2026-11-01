@@ -260,5 +260,11 @@ public sealed class GitHubActionsClient : IIntegrationClient
         return $"https://github.com/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(name)}";
     }
 
+    public static string GetRepositoryName(string repository)
+    {
+        var (owner, name) = ParseRepository(repository);
+        return $"{owner}/{name}";
+    }
+
     public void Dispose() => _http.Dispose();
 }
