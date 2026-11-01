@@ -22,6 +22,7 @@ public sealed class TrayController : IDisposable
     private Snapshot _all = Snapshot.Empty();
     private Dictionary<string, BuildInfo>? _previousBuilds;
     private HashSet<string>? _previousReviewPrs;
+    private Dictionary<string, int>? _previousUnresolvedComments;
     private string? _notificationUrl;
     private bool _refreshing;
     private SettingsWindow? _settingsWindow;
@@ -77,6 +78,7 @@ public sealed class TrayController : IDisposable
         }
         _previousBuilds = null;
         _previousReviewPrs = null;
+        _previousUnresolvedComments = null;
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(15, _settings.PollSeconds));
         _timer.Start();
         _ = RefreshAsync();
@@ -131,9 +133,11 @@ public sealed class TrayController : IDisposable
     {
         var builds = s.Builds.ToDictionary(b => b.Key);
         var reviewPrs = s.PullRequests.Where(p => p.NeedsMyReview).Select(p => p.Key).ToHashSet();
+        var unresolvedComments = s.PullRequests.Where(p => p.HasUnresolvedComments)
+            .ToDictionary(p => p.Key, p => p.UnresolvedCommentCount);
 
         // First successful poll only establishes the baseline.
-        if (_previousBuilds != null && _previousReviewPrs != null && _settings.Notifications)
+        if (_previousBuilds != null && _previousReviewPrs != null && _previousUnresolvedComments != null && _settings.Notifications)
         {
             foreach (var b in builds.Values.Where(b => !b.IsRunning && b.Result != null))
             {
@@ -149,10 +153,19 @@ public sealed class TrayController : IDisposable
 
             foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Key) && GetProjectNotifications(p.Project).ReviewRequested))
                 Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
+
+            if (_settings.NotifyUnresolvedComments)
+            {
+                foreach (var p in s.PullRequests.Where(p => p.UnresolvedCommentCount > _previousUnresolvedComments.GetValueOrDefault(p.Key)))
+                    Toast(Strings.Get("Toast_UnresolvedComment"),
+                        Strings.Format("Toast_UnresolvedCommentText", p.Id, p.Title, p.UnresolvedCommentCount),
+                        p.Url, NotificationIcon.Info);
+            }
         }
 
         _previousBuilds = builds;
         _previousReviewPrs = reviewPrs;
+        _previousUnresolvedComments = unresolvedComments;
     }
 
     private void Toast(string title, string text, string url, NotificationIcon icon)
