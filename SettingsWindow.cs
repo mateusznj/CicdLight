@@ -31,16 +31,22 @@ public sealed class SettingsWindow : Window
     private readonly ComboBox _language = new() { MinWidth = 200, Items = { Strings.Get("Language_System"), "English", "Polski" } };
     private AppSettings _s;
     private readonly Action _onSaved;
+    private readonly Action _testNotification;
     private readonly Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> _getPipelineItems;
+    private readonly Func<IntegrationConnection, IReadOnlyList<string>> _getProjects;
     private ConnectionEditorWindow? _connectionEditor;
     private IntegrationConnection? _pipelineConnection;
 
     public SettingsWindow(AppSettings settings, Action onSaved,
-        Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> getPipelineItems)
+        Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> getPipelineItems,
+        Func<IntegrationConnection, IReadOnlyList<string>> getProjects,
+        Action testNotification)
     {
         _s = settings;
         _onSaved = onSaved;
+        _testNotification = testNotification;
         _getPipelineItems = getPipelineItems;
+        _getProjects = getProjects;
         Title = Strings.Get("Settings_Title");
         WindowIcon.Apply(this);
         AppWindow.Resize(new SizeInt32(760, 720));
@@ -67,6 +73,9 @@ public sealed class SettingsWindow : Window
         _generalPage.Children.Add(Labeled(Strings.Get("Settings_Poll"), _poll));
         _generalPage.Children.Add(Labeled(Strings.Get("Settings_Language"), _language));
         _generalPage.Children.Add(_notify);
+        var testNotificationButton = new Button { Content = Strings.Get("Settings_TestNotification") };
+        testNotificationButton.Click += (_, _) => _testNotification();
+        _generalPage.Children.Add(testNotificationButton);
         _generalPage.Children.Add(_mine);
         _generalPage.Children.Add(_startup);
         _aboutPage.Children.Add(new TextBlock
@@ -247,7 +256,10 @@ public sealed class SettingsWindow : Window
                     DefaultButton = ContentDialogButton.Primary,
                     XamlRoot = _aboutPage.XamlRoot
                 };
-                if (await dialog.ShowAsync() == ContentDialogResult.Primary) OpenUrl(releaseUrl);
+                if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                {
+                    OpenUrl(releaseUrl);
+                }
             }
             else
             {
@@ -278,8 +290,10 @@ public sealed class SettingsWindow : Window
         await dialog.ShowAsync();
     }
 
-    private static void OpenUrl(string url) =>
+    private static void OpenUrl(string url)
+    {
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
 
     private void RenderPipelineHub()
     {
@@ -321,7 +335,8 @@ public sealed class SettingsWindow : Window
         });
 
         var items = _getPipelineItems(connection);
-        if (items.Count == 0)
+        var projects = _getProjects(connection);
+        if (items.Count == 0 && projects.Count == 0)
         {
             _pipelinePage.Children.Add(new TextBlock
             {
@@ -332,7 +347,6 @@ public sealed class SettingsWindow : Window
         }
         else
         {
-            var projects = items.Select(item => item.Project).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             _pipelinePage.Children.Add(new PipelineConfigurationControl(
                 items,
                 projects,
@@ -416,8 +430,10 @@ public sealed class SettingsWindow : Window
             var remove = new Button
             {
                 Content = new FontIcon { Glyph = "\uE74D", FontSize = 14 },
+                Height = 32,
                 MinWidth = 36,
-                Padding = new Thickness(6, 2, 6, 2)
+                Padding = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Center
             };
             ToolTipService.SetToolTip(remove, Strings.Get("Button_Remove"));
             remove.Click += async (_, _) => await ConfirmRemoveConnectionAsync(connection);

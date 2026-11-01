@@ -21,7 +21,8 @@ public sealed class TrayController : IDisposable
     private Snapshot _snapshot = Snapshot.Empty();
     private Snapshot _all = Snapshot.Empty();
     private Dictionary<string, BuildInfo>? _previousBuilds;
-    private HashSet<int>? _previousReviewPrs;
+    private HashSet<string>? _previousReviewPrs;
+    private Dictionary<string, int>? _previousUnresolvedComments;
     private string? _notificationUrl;
     private bool _refreshing;
     private SettingsWindow? _settingsWindow;
@@ -36,7 +37,7 @@ public sealed class TrayController : IDisposable
         };
         _tray.ForceCreate();
         _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings,
-            OpenDefaultUrl, Exit, OpenUrl);
+            () => _settings.Connections, Exit, OpenUrl);
         _tray.TrayIcon.MessageWindow.MouseEventReceived += (_, e) =>
         {
             switch (e.MouseEvent)
@@ -77,6 +78,7 @@ public sealed class TrayController : IDisposable
         }
         _previousBuilds = null;
         _previousReviewPrs = null;
+        _previousUnresolvedComments = null;
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(15, _settings.PollSeconds));
         _timer.Start();
         _ = RefreshAsync();
@@ -130,10 +132,12 @@ public sealed class TrayController : IDisposable
     private void Notify(Snapshot s)
     {
         var builds = s.Builds.ToDictionary(b => b.Key);
-        var reviewPrs = s.PullRequests.Where(p => p.NeedsMyReview).Select(p => p.Id).ToHashSet();
+        var reviewPrs = s.PullRequests.Where(p => p.NeedsMyReview).Select(p => p.Key).ToHashSet();
+        var unresolvedComments = s.PullRequests.Where(p => p.HasUnresolvedComments)
+            .ToDictionary(p => p.Key, p => p.UnresolvedCommentCount);
 
         // First successful poll only establishes the baseline.
-        if (_previousBuilds != null && _previousReviewPrs != null && _settings.Notifications)
+        if (_previousBuilds != null && _previousReviewPrs != null && _previousUnresolvedComments != null && _settings.Notifications)
         {
             foreach (var b in builds.Values.Where(b => !b.IsRunning && b.Result != null))
             {
@@ -147,12 +151,20 @@ public sealed class TrayController : IDisposable
                     Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, NotificationIcon.Info);
             }
 
-            foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Id) && GetProjectNotifications(p.Project).ReviewRequested))
+            foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Key) && GetProjectNotifications(p.Project).ReviewRequested))
                 Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
+
+            foreach (var p in s.PullRequests.Where(p =>
+                         p.UnresolvedCommentCount > _previousUnresolvedComments.GetValueOrDefault(p.Key) &&
+                         GetProjectNotifications(p.Project).UnresolvedComments))
+                Toast(Strings.Get("Toast_UnresolvedComment"),
+                    Strings.Format("Toast_UnresolvedCommentText", p.Id, p.Title, p.UnresolvedCommentCount),
+                    p.Url, NotificationIcon.Info);
         }
 
         _previousBuilds = builds;
         _previousReviewPrs = reviewPrs;
+        _previousUnresolvedComments = unresolvedComments;
     }
 
     private void Toast(string title, string text, string url, NotificationIcon icon)
@@ -169,7 +181,8 @@ public sealed class TrayController : IDisposable
         {
             BuildFailed = _settings.NotifyBuildFailed,
             BuildFixed = _settings.NotifyBuildFixed,
-            ReviewRequested = _settings.NotifyReviewRequested
+            ReviewRequested = _settings.NotifyReviewRequested,
+            UnresolvedComments = true
         };
     }
 
@@ -211,28 +224,38 @@ public sealed class TrayController : IDisposable
             _settings = AppSettings.Load();
             ApplySettings();
             _settingsWindow?.UpdateSettings(_settings);
-        }, GetPipelineItems);
+        }, GetPipelineItems, GetProjects, ShowTestNotification);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         TrayPopupWindow.BringToFront(_settingsWindow);
+    }
+
+    private IReadOnlyList<string> GetProjects(IntegrationConnection connection)
+    {
+        if (connection.Provider == IntegrationProvider.GitHub)
+            return [GitHubActionsClient.GetRepositoryName(connection.Repository)];
+
+        return _all.Builds.Where(build => build.ConnectionId == connection.Id).Select(build => build.Project)
+            .Concat(_all.Releases.Where(release => release.ConnectionId == connection.Id).Select(release => release.Project))
+            .Concat(_all.PullRequests.Where(pullRequest => pullRequest.ConnectionId == connection.Id).Select(pullRequest => pullRequest.Project))
+            .Concat(string.IsNullOrWhiteSpace(connection.Project) ? [] : [connection.Project])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(project => project, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
+    private void ShowTestNotification()
+    {
+        _notificationUrl = null;
+        _tray.ShowNotification(
+            Strings.Get("Toast_TestNotification"),
+            Strings.Get("Toast_TestNotificationText"),
+            NotificationIcon.Info);
     }
 
     private static void OpenUrl(string? url)
     {
         if (!string.IsNullOrEmpty(url))
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-    }
-
-    private void OpenDefaultUrl()
-    {
-        var azure = _settings.Connections.FirstOrDefault(connection => connection.Provider == IntegrationProvider.AzureDevOps);
-        if (azure != null)
-        {
-            OpenUrl(azure.OrganizationUrl);
-            return;
-        }
-
-        var github = _settings.Connections.FirstOrDefault(connection => connection.Provider == IntegrationProvider.GitHub);
-        if (github != null) OpenUrl(GitHubActionsClient.GetRepositoryUrl(github.Repository));
     }
 
     private static Icon MakeIcon(Health health)
@@ -245,23 +268,27 @@ public sealed class TrayController : IDisposable
             Health.Failed => Color.FromArgb(231, 76, 60),
             _ => Color.Gray
         };
-        using var bmp = new Bitmap(32, 32);
-        using (var g = Graphics.FromImage(bmp))
+        IntPtr iconHandle;
+        using (var bmp = new Bitmap(32, 32))
         {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using var brush = new SolidBrush(color);
-            using var pen = new Pen(Color.White, 2.4f) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round };
-            using var path = new GraphicsPath();
-            const float x = 2, w = 28, d = 12;
-            path.AddArc(x, x, d, d, 180, 90);
-            path.AddArc(x + w - d, x, d, d, 270, 90);
-            path.AddArc(x + w - d, x + w - d, d, d, 0, 90);
-            path.AddArc(x, x + w - d, d, d, 90, 90);
-            path.CloseFigure();
-            g.FillPath(brush, path);
-            g.DrawLines(pen, [new PointF(6f, 17f), new PointF(11.5f, 17f), new PointF(14.5f, 9.5f), new PointF(18.5f, 22.5f), new PointF(21f, 16f), new PointF(26f, 16f)]);
+            using (var g = Graphics.FromImage(bmp))
+            using (var brush = new SolidBrush(color))
+            using (var pen = new Pen(Color.White, 2.4f) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round })
+            using (var path = new GraphicsPath())
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                const float x = 2, w = 28, d = 12;
+                path.AddArc(x, x, d, d, 180, 90);
+                path.AddArc(x + w - d, x, d, d, 270, 90);
+                path.AddArc(x + w - d, x + w - d, d, d, 0, 90);
+                path.AddArc(x, x + w - d, d, d, 90, 90);
+                path.CloseFigure();
+                g.FillPath(brush, path);
+                g.DrawLines(pen, [new PointF(6f, 17f), new PointF(11.5f, 17f), new PointF(14.5f, 9.5f), new PointF(18.5f, 22.5f), new PointF(21f, 16f), new PointF(26f, 16f)]);
+            }
+            iconHandle = bmp.GetHicon();
         }
-        return Icon.FromHandle(bmp.GetHicon());
+        return Icon.FromHandle(iconHandle);
     }
 
     [DllImport("user32.dll", SetLastError = true)]

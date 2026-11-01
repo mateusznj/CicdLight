@@ -152,30 +152,30 @@ public sealed class AzureDevOpsClient : IIntegrationClient
             .DistinctBy(p => p.Id)
             .ToList();
         var commentChecks = visiblePullRequests.Select(async p =>
-            (p.Id, HasComments: await HasUnresolvedCommentsAsync(p, ct))).ToList();
+            (p.Id, Count: await CountUnresolvedCommentsAsync(p, ct))).ToList();
         await Task.WhenAll(commentChecks);
 
-        var prsWithComments = commentChecks.Where(t => t.Result.HasComments).Select(t => t.Result.Id).ToHashSet();
-        return pullRequests.Select(p => prsWithComments.Contains(p.Id)
-            ? p with { HasUnresolvedComments = true }
+        var commentCounts = commentChecks.ToDictionary(t => t.Result.Id, t => t.Result.Count);
+        return pullRequests.Select(p => commentCounts.TryGetValue(p.Id, out var count)
+            ? p with { UnresolvedCommentCount = count }
             : p).ToList();
     }
 
-    private async Task<bool> HasUnresolvedCommentsAsync(PullRequestInfo pullRequest, CancellationToken ct)
+    private async Task<int> CountUnresolvedCommentsAsync(PullRequestInfo pullRequest, CancellationToken ct)
     {
         var url = $"{_connection.OrganizationUrl}/{Uri.EscapeDataString(pullRequest.Project)}/_apis/git/repositories/" +
                   $"{Uri.EscapeDataString(pullRequest.RepositoryId)}/pullRequests/{pullRequest.Id}/threads?{Api}";
         try
         {
             var json = await GetAsync(url, ct);
-            return json.GetProperty("value").EnumerateArray().Any(thread =>
+            return json.GetProperty("value").EnumerateArray().Count(thread =>
                 thread.TryGetProperty("status", out var status) && status.GetString() == "active" &&
                 thread.TryGetProperty("comments", out var comments) && comments.EnumerateArray().Any(comment =>
                     (!comment.TryGetProperty("isDeleted", out var deleted) || !deleted.GetBoolean()) &&
                     (!comment.TryGetProperty("commentType", out var type) || type.GetString() != "system")));
         }
-        catch (HttpRequestException) { return false; }
-        catch (InvalidOperationException) { return false; }
+        catch (HttpRequestException) { return 0; }
+        catch (InvalidOperationException) { return 0; }
     }
 
     private static bool InScope(PullRequestInfo p, string[] projects) =>
@@ -190,7 +190,7 @@ public sealed class AzureDevOpsClient : IIntegrationClient
         var id = pr.GetProperty("pullRequestId").GetInt32();
         var url = $"{_connection.OrganizationUrl}/{Uri.EscapeDataString(project)}/_git/{Uri.EscapeDataString(repoName)}/pullrequest/{id}";
         return new PullRequestInfo(id, project, repoName, pr.GetProperty("title").GetString() ?? "",
-            pr.GetProperty("createdBy").GetProperty("displayName").GetString() ?? "", isMine, false, url, repoId, false, _connection.Id);
+            pr.GetProperty("createdBy").GetProperty("displayName").GetString() ?? "", isMine, false, url, repoId, 0, _connection.Id);
     }
 
     private async Task<JsonElement> GetAsync(string url, CancellationToken ct)

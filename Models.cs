@@ -61,6 +61,7 @@ public sealed class ProjectNotificationSettings
     public bool BuildFailed { get; set; } = true;
     public bool BuildFixed { get; set; } = true;
     public bool ReviewRequested { get; set; } = true;
+    public bool UnresolvedComments { get; set; } = true;
 }
 
 public record BuildInfo(
@@ -87,7 +88,14 @@ public record ReleaseInfo(
 public record PullRequestInfo(
     int Id, string Project, string Repository, string Title, string Author,
     bool IsMine, bool NeedsMyReview, string Url,
-    string RepositoryId = "", bool HasUnresolvedComments = false, string ConnectionId = "");
+    string RepositoryId = "", int UnresolvedCommentCount = 0, string ConnectionId = "")
+{
+    public bool HasUnresolvedComments => UnresolvedCommentCount > 0;
+
+    public string Key => string.IsNullOrEmpty(ConnectionId)
+        ? $"P:{Project}:{Id}"
+        : $"P:{ConnectionId}:{Project}:{Id}";
+}
 
 public record Snapshot(
     IReadOnlyList<BuildInfo> Builds,
@@ -111,6 +119,6 @@ public record Snapshot(
         Error != null ? Health.Unknown :
         Builds.Any(b => b.IsFailed && !b.IsRunning) || Releases.Any(r => r.IsFailed && !r.IsRunning) ? Health.Failed :
         Builds.Any(b => b.IsRunning) || Releases.Any(r => r.IsRunning) ? Health.Running :
-        PullRequests.Any(p => p.NeedsMyReview) ? Health.Warning :
+        PullRequests.Any(p => p.NeedsMyReview || p.HasUnresolvedComments) ? Health.Warning :
         Health.Ok;
 }
