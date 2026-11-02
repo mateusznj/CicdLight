@@ -9,6 +9,10 @@
   .NET 10 · WinUI 3 · Windows App SDK · H.NotifyIcon
 
   [🇵🇱 Polski](#-polski) · [🇬🇧 English](#-english) · [Pobierz / Download](https://github.com/mateusznj/CicdLight/releases/latest)
+
+  <a href="https://github.com/mateusznj/CicdLight/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/mateusznj/CicdLight/build.yml?branch=main&label=build" alt="Build status" /></a>
+  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.0.2"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.0.2/total?label=downloads" alt="v1.0.2 release downloads" /></a>
+  <a href="https://github.com/mateusznj/CicdLight/releases/latest"><img src="https://img.shields.io/github/v/release/mateusznj/CicdLight?label=version" alt="Latest release version" /></a>
 </div>
 
 <p align="center">
