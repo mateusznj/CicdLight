@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
@@ -8,6 +9,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
 {
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
     private readonly IntegrationConnection _connection;
+    private readonly SemaphoreSlim _requestLock = new(1, 1);
+    private DateTimeOffset _rateLimitUntil;
+    public DateTimeOffset? NextRetryAt => _rateLimitUntil > DateTimeOffset.UtcNow ? _rateLimitUntil : null;
 
     public GitHubActionsClient(IntegrationConnection connection)
     {
@@ -153,15 +157,25 @@ public sealed class GitHubActionsClient : IIntegrationClient
                 query,
                 variables = new { owner, name = repository, number = pullRequestNumber, after }
             });
-            using var response = await _http.PostAsync("https://api.github.com/graphql",
-                new StringContent(body, Encoding.UTF8, "application/json"), ct);
-            response.EnsureSuccessStatusCode();
+            using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.github.com/graphql")
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+            using var response = await SendAsync(request, ct);
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
             var root = document.RootElement;
             if (root.TryGetProperty("errors", out var graphQlErrors))
-                throw new InvalidOperationException(string.Join("; ",
-                    graphQlErrors.EnumerateArray().Select(error => error.GetProperty("message").GetString())));
+            {
+                var message = string.Join("; ",
+                    graphQlErrors.EnumerateArray().Select(error => error.GetProperty("message").GetString()));
+                if (IsRateLimitMessage(message))
+                {
+                    _rateLimitUntil = GetRateLimitReset(response);
+                    throw CreateRateLimitException(_rateLimitUntil, message);
+                }
+                throw new InvalidOperationException(message);
+            }
 
             var threads = root.GetProperty("data").GetProperty("repository")
                 .GetProperty("pullRequest").GetProperty("reviewThreads");
@@ -190,11 +204,109 @@ public sealed class GitHubActionsClient : IIntegrationClient
 
     private async Task<JsonElement> GetJsonAsync(string url, CancellationToken ct)
     {
-        using var response = await _http.GetAsync(url, ct);
-        response.EnsureSuccessStatusCode();
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await SendAsync(request, ct);
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
         return document.RootElement.Clone();
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        await _requestLock.WaitAsync(ct);
+        try
+        {
+            if (_rateLimitUntil > DateTimeOffset.UtcNow)
+                throw CreateRateLimitException(_rateLimitUntil);
+
+            var response = await _http.SendAsync(request, ct);
+            var responseText = (int)response.StatusCode == 429 ||
+                               response.StatusCode == System.Net.HttpStatusCode.Forbidden
+                ? await response.Content.ReadAsStringAsync(ct)
+                : null;
+            if (IsRateLimited(response, responseText))
+            {
+                _rateLimitUntil = GetRateLimitReset(response);
+                response.Dispose();
+                throw CreateRateLimitException(_rateLimitUntil, GetApiMessage(responseText ?? ""));
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                responseText ??= await response.Content.ReadAsStringAsync(ct);
+                var message = GetApiMessage(responseText);
+                var error = response.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                    ? Strings.Format("GitHub_TokenRejected", message)
+                    : Strings.Format("GitHub_AccessDenied", (int)response.StatusCode, response.ReasonPhrase, message);
+                response.Dispose();
+                throw new HttpRequestException(error);
+            }
+
+            if (response.Headers.TryGetValues("X-RateLimit-Remaining", out var successfulRemaining) &&
+                successfulRemaining.FirstOrDefault() == "0")
+                _rateLimitUntil = GetRateLimitReset(response);
+
+            return response;
+        }
+        finally
+        {
+            _requestLock.Release();
+        }
+    }
+
+    private static bool IsRateLimited(HttpResponseMessage response, string? responseText)
+    {
+        if ((int)response.StatusCode == 429) return true;
+        if (response.StatusCode != System.Net.HttpStatusCode.Forbidden) return false;
+        if (response.Headers.RetryAfter != null) return true;
+        if (response.Headers.TryGetValues("X-RateLimit-Remaining", out var remaining) &&
+            remaining.FirstOrDefault() == "0")
+            return true;
+
+        return IsRateLimitMessage(GetApiMessage(responseText ?? ""));
+    }
+
+    private static bool IsRateLimitMessage(string message) =>
+        message.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ||
+        message.Contains("secondary rate", StringComparison.OrdinalIgnoreCase);
+
+    private static DateTimeOffset GetRateLimitReset(HttpResponseMessage response)
+    {
+        var now = DateTimeOffset.UtcNow;
+        DateTimeOffset? retryAt = null;
+        if (response.Headers.RetryAfter?.Delta is { } retryDelay)
+            retryAt = now + retryDelay;
+        else if (response.Headers.RetryAfter?.Date is { } retryDate)
+            retryAt = retryDate;
+        else if (response.Headers.TryGetValues("X-RateLimit-Reset", out var resetValues) &&
+            long.TryParse(resetValues.FirstOrDefault(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds))
+            retryAt = DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
+
+        return retryAt > now ? retryAt.Value : now.AddMinutes(1);
+    }
+
+    private static string GetApiMessage(string responseText)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(responseText);
+            if (document.RootElement.TryGetProperty("message", out var message))
+                return message.GetString() ?? "";
+        }
+        catch (JsonException)
+        {
+        }
+
+        return "";
+    }
+
+    private static InvalidOperationException CreateRateLimitException(DateTimeOffset retryAt, string? apiMessage = null)
+    {
+        var retryTime = retryAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
+        return new InvalidOperationException(Strings.Format(
+            "GitHub_RateLimit",
+            retryTime,
+            string.IsNullOrWhiteSpace(apiMessage) ? "" : $"GitHub: {apiMessage}"));
     }
 
     private BuildInfo ToBuild(string repository, JsonElement run)
@@ -266,5 +378,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
         return $"{owner}/{name}";
     }
 
-    public void Dispose() => _http.Dispose();
+    public void Dispose()
+    {
+        _http.Dispose();
+        _requestLock.Dispose();
+    }
 }

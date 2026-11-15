@@ -41,7 +41,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 
 - **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y Azure DevOps i GitHub oczekujące na review oraz Twoje PR-y. Przy PR-ach wyświetlana jest liczba nierozwiązanych wątków komentarzy. Kliknięcie elementu otwiera go w przeglądarce.
 - **Połączenia:** lista repozytoriów GitHub i projektów Azure DevOps, każde z osobnym kluczem i wyborem obserwowanych pipeline'ów. Menu pozwala otworzyć osobno każdy skonfigurowany projekt Azure DevOps lub repozytorium GitHub. Sekret jest szyfrowany DPAPI (`CurrentUser`).
-- **GitHub Actions:** statusy ostatnich uruchomień wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; prywatne używają tokenu przypisanego do danego repozytorium.
+- **GitHub Actions:** statusy ostatnich uruchomień wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; prywatne używają tokenu przypisanego do danego repozytorium. Po osiągnięciu limitu API CicdLight wstrzymuje zapytania do czasu resetu i automatycznie ponawia odświeżanie.
 - **GitHub pull requests:** otwarte PR-y przypisane do zalogowanego użytkownika jako autora lub osoby proszonej o review. Wymagany jest token GitHub, aby rozpoznać bieżącego użytkownika; do repozytoriów prywatnych token jest wymagany również do odczytu PR-ów.
 - **Aktualizacje:** ręczne sprawdzenie najnowszego stabilnego wydania GitHub i otwarcie strony wydania; aplikacja nie pobiera ani nie instaluje aktualizacji automatycznie.
 - **Powiadomienia systemowe:** globalny wyłącznik oraz ustawienia per projekt dla nieudanych i naprawionych buildów, nowych próśb o review oraz nierozwiązanych komentarzy w PR-ach. Testowy przycisk w **Ustawienia → Ogólne** pozwala sprawdzić powiadomienia Windows.
@@ -109,7 +109,7 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 
 - **At-a-glance overview:** recent builds (pipeline + branch), releases, Azure DevOps and GitHub PRs awaiting review and your own PRs. Each PR shows its unresolved comment thread count. Click an item to open it in the browser.
 - **Connections:** a list of GitHub repositories and Azure DevOps projects, each with its own credential and selected pipelines. The menu can open each configured Azure DevOps project or GitHub repository separately. Secrets are protected with Windows DPAPI (`CurrentUser`).
-- **GitHub Actions:** recent workflow runs shown alongside Azure DevOps builds. Public repositories need no token; private repositories use a token stored on that repository's connection.
+- **GitHub Actions:** recent workflow runs shown alongside Azure DevOps builds. Public repositories need no token; private repositories use a token stored on that repository's connection. When the API rate limit is reached, CicdLight pauses requests until reset and automatically resumes refreshing.
 - **GitHub pull requests:** open PRs authored by the authenticated user or requesting their review. A GitHub token is required to identify the current user; private repositories also require a token to read PRs.
 - **Updates:** manually checks the latest stable GitHub release and opens its release page; the app does not download or install updates automatically.
 - **System notifications:** a global switch and per-project options for failed and recovered builds, new review requests, and unresolved PR comments. Use the test button in **Settings → General** to verify Windows notifications.

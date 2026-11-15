@@ -126,7 +126,33 @@ public sealed class TrayController : IDisposable
             Update();
         }
         catch (OperationCanceledException) { }
-        finally { _refreshing = false; }
+        finally
+        {
+            _refreshing = false;
+            UpdateRefreshInterval();
+        }
+    }
+
+    private void UpdateRefreshInterval()
+    {
+        var interval = TimeSpan.FromSeconds(Math.Max(15, _settings.PollSeconds));
+        var rateLimitRetry = _clients
+            .Select(entry => entry.Client)
+            .OfType<GitHubActionsClient>()
+            .Select(client => client.NextRetryAt)
+            .Where(retryAt => retryAt.HasValue)
+            .Select(retryAt => retryAt!.Value)
+            .DefaultIfEmpty(DateTimeOffset.MaxValue)
+            .Min();
+
+        if (rateLimitRetry != DateTimeOffset.MaxValue)
+        {
+            var retryDelay = rateLimitRetry - DateTimeOffset.UtcNow;
+            if (retryDelay > TimeSpan.Zero && retryDelay < interval)
+                interval = retryDelay;
+        }
+
+        _timer.Interval = interval;
     }
 
     private void Notify(Snapshot s)

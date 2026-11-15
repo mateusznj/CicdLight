@@ -74,6 +74,7 @@
   <data name="Connection_GitHubToken" xml:space="preserve"><value>Token GitHub</value></data>
   <data name="Connection_GitHubTokenOptional" xml:space="preserve"><value>Opcjonalny dla publicznych Actions; wymagany do rozpoznania Twoich PR-ów</value></data>
   <data name="Connection_LeaveCredentialEmpty" xml:space="preserve"><value>Puste pole zachowa obecny token</value></data>
+  <data name="Connection_TokenStored" xml:space="preserve"><value>token zapisany</value></data>
   <data name="Connection_RequiredFields" xml:space="preserve"><value>Uzupełnij wymagane pola połączenia.</value></data>
   <data name="Connection_AlreadyExists" xml:space="preserve"><value>To połączenie jest już na liście.</value></data>
   <data name="Connection_Configured" xml:space="preserve"><value>Skonfigurowano</value></data>
@@ -114,4 +115,7 @@
   <data name="Choose_Title" xml:space="preserve"><value>CicdLight - Wybór pipeline'ów</value></data>
   <data name="Error_Auth" xml:space="preserve"><value>Autoryzacja nieudana - sprawdź PAT i jego uprawnienia.</value></data>
   <data name="Error_Html" xml:space="preserve"><value>Nieoczekiwana odpowiedź HTML - sprawdź nazwę organizacji i PAT.</value></data>
+  <data name="GitHub_TokenRejected" xml:space="preserve"><value>GitHub odrzucił token (401 Unauthorized). Sprawdź, czy jest ważny i nie wygasł. {0}</value></data>
+  <data name="GitHub_AccessDenied" xml:space="preserve"><value>GitHub API zwróciło błąd {0} ({1}). Sprawdź dostęp do repozytorium i uprawnienia tokenu. {2}</value></data>
+  <data name="GitHub_RateLimit" xml:space="preserve"><value>Osiągnięto limit GitHub API. Ponowienie po {0}. {1}</value></data>
 </root>

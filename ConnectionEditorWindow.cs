@@ -51,9 +51,6 @@ public sealed class ConnectionEditorWindow : Window
         _provider.SelectionChanged += (_, _) => UpdateProviderFields();
         _target.Text = _draft.Provider == IntegrationProvider.AzureDevOps ? _draft.Organization : _draft.Repository;
         _project.Text = _draft.Project;
-        _credential.PlaceholderText = _isNew
-            ? Strings.Get(_draft.Provider == IntegrationProvider.AzureDevOps ? "Connection_AzurePat" : "Connection_GitHubTokenOptional")
-            : Strings.Get("Connection_LeaveCredentialEmpty");
         UpdateProviderFields();
 
         var save = new Button
@@ -97,7 +94,13 @@ public sealed class ConnectionEditorWindow : Window
         _target.PlaceholderText = Strings.Get(isAzure ? "Connection_OrganizationPlaceholder" : "Connection_RepositoryPlaceholder");
         _projectLabel.Text = Strings.Get("Connection_Project");
         _projectField.Visibility = isAzure ? Visibility.Visible : Visibility.Collapsed;
-        _credentialLabel.Text = Strings.Get(isAzure ? "Connection_AzurePat" : "Connection_GitHubToken");
+        var credentialName = Strings.Get(isAzure ? "Connection_AzurePat" : "Connection_GitHubToken");
+        _credentialLabel.Text = _draft.HasStoredCredential
+            ? $"{credentialName} ({Strings.Get("Connection_TokenStored")})"
+            : credentialName;
+        _credential.PlaceholderText = _isNew
+            ? Strings.Get(isAzure ? "Connection_AzurePat" : "Connection_GitHubTokenOptional")
+            : Strings.Get("Connection_LeaveCredentialEmpty");
         AppWindow.Resize(new SizeInt32(520, isAzure ? 480 : 420));
     }
 

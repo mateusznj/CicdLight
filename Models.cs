@@ -22,6 +22,9 @@ public sealed class IntegrationConnection
     public string? LastError { get; set; }
 
     [System.Text.Json.Serialization.JsonIgnore]
+    public bool HasStoredCredential => !string.IsNullOrWhiteSpace(EncryptedCredential);
+
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Credential
     {
         get
