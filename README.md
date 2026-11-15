@@ -87,7 +87,7 @@ Fine-grained token GitHub dla prywatnego repozytorium wymaga **Actions: Read** i
 
 ### Planowane możliwości
 
-Obsługa kolejnych scenariuszy release pipelines, work items oraz Azure Resource Health (ARM API).
+Pełniejszy plan funkcji, integracji GitHub i Azure DevOps oraz Team Status znajduje się w [ROADMAP.md](ROADMAP.md).
 
 ---
 
@@ -157,4 +157,4 @@ Fine-grained GitHub tokens for private repositories require **Actions: Read** an
 
 ### Roadmap ideas
 
-Additional release pipeline scenarios, work items, and Azure Resource Health (ARM API).
+See [ROADMAP.md](ROADMAP.md) for the feature plan, GitHub and Azure DevOps integration outline, and Team Status.
