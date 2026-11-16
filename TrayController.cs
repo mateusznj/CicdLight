@@ -20,6 +20,7 @@ public sealed class TrayController : IDisposable
     private CancellationTokenSource? _cts;
     private Snapshot _snapshot = Snapshot.Empty();
     private Snapshot _all = Snapshot.Empty();
+    private readonly Dictionary<string, IReadOnlyList<string>> _connectionProjects = [];
     private Dictionary<string, BuildInfo>? _previousBuilds;
     private HashSet<string>? _previousReviewPrs;
     private Dictionary<string, int>? _previousUnresolvedComments;
@@ -106,6 +107,8 @@ public sealed class TrayController : IDisposable
                 return (entry.Connection, Snapshot: snapshot);
             });
             var results = await Task.WhenAll(requests);
+            foreach (var result in results)
+                _connectionProjects[result.Connection.Id] = result.Snapshot.ProjectList ?? [];
             var errors = results.Count(result => result.Snapshot.Error != null);
             _all = new Snapshot(
                 results.SelectMany(result => result.Snapshot.Builds).ToList(),
@@ -116,7 +119,8 @@ public sealed class TrayController : IDisposable
                 results.SelectMany(result => result.Connection.HasSelection
                     ? result.Snapshot.Builds.Where(build => result.Connection.SelectedItems.Contains(build.Key))
                     : result.Snapshot.Builds).ToList(),
-                results.SelectMany(result => result.Snapshot.PullRequests).ToList(),
+                results.SelectMany(result => result.Snapshot.PullRequests)
+                    .Where(pullRequest => GetProjectNotifications(pullRequest.Project).ShowPullRequests).ToList(),
                 errors == 0 ? null : Strings.Format("Tray_ConnectionErrors", errors),
                 results.SelectMany(result => result.Connection.HasSelection
                     ? result.Snapshot.Releases.Where(release => result.Connection.SelectedItems.Contains(release.Key))
@@ -208,7 +212,8 @@ public sealed class TrayController : IDisposable
             BuildFailed = _settings.NotifyBuildFailed,
             BuildFixed = _settings.NotifyBuildFixed,
             ReviewRequested = _settings.NotifyReviewRequested,
-            UnresolvedComments = true
+            UnresolvedComments = true,
+            ShowPullRequests = true
         };
     }
 
@@ -264,6 +269,7 @@ public sealed class TrayController : IDisposable
             .Concat(_all.Releases.Where(release => release.ConnectionId == connection.Id).Select(release => release.Project))
             .Concat(_all.PullRequests.Where(pullRequest => pullRequest.ConnectionId == connection.Id).Select(pullRequest => pullRequest.Project))
             .Concat(string.IsNullOrWhiteSpace(connection.Project) ? [] : [connection.Project])
+            .Concat(_connectionProjects.GetValueOrDefault(connection.Id) ?? [])
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(project => project, StringComparer.CurrentCultureIgnoreCase)
             .ToList();

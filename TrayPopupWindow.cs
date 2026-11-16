@@ -145,6 +145,11 @@ public sealed class TrayPopupWindow : Window
         foreach (var p in mine)
             AddRow(AppIcon.PullRequest, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project, p.UnresolvedCommentCount);
 
+        var others = s.PullRequests.Where(p => !p.IsMine && !p.NeedsMyReview).Take(5).ToList();
+        if (others.Count > 0) AddHeader(Strings.Get("Section_OtherPrs"), null);
+        foreach (var p in others)
+            AddRow(AppIcon.PullRequest, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project);
+
         if (_list.Children.Count == 0)
             _list.Children.Add(new TextBlock { Text = s.Error ?? Strings.Get("Popup_Nothing"), Margin = new Thickness(8), TextWrapping = TextWrapping.Wrap, Opacity = 0.7 });
     }

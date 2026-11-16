@@ -33,6 +33,7 @@
   <data name="Section_Releases" xml:space="preserve"><value>Releasy</value></data>
   <data name="Section_Review" xml:space="preserve"><value>Do przeglądu</value></data>
   <data name="Section_MyPrs" xml:space="preserve"><value>Moje pull requesty</value></data>
+  <data name="Section_OtherPrs" xml:space="preserve"><value>Pozostałe pull requesty</value></data>
   <data name="Popup_Nothing" xml:space="preserve"><value>Na razie nic do pokazania.</value></data>
   <data name="Ago_Now" xml:space="preserve"><value>przed chwilą</value></data>
   <data name="Ago_Min" xml:space="preserve"><value>{0} min temu</value></data>
@@ -73,6 +74,7 @@
   <data name="Connection_AzurePat" xml:space="preserve"><value>Personal Access Token</value></data>
   <data name="Connection_GitHubToken" xml:space="preserve"><value>Token GitHub</value></data>
   <data name="Connection_GitHubTokenOptional" xml:space="preserve"><value>Opcjonalny dla publicznych Actions; wymagany do rozpoznania Twoich PR-ów</value></data>
+  <data name="Choose_ShowPullRequests" xml:space="preserve"><value>Pull requesty</value></data>
   <data name="Connection_LeaveCredentialEmpty" xml:space="preserve"><value>Puste pole zachowa obecny token</value></data>
   <data name="Connection_TokenStored" xml:space="preserve"><value>token zapisany</value></data>
   <data name="Connection_RequiredFields" xml:space="preserve"><value>Uzupełnij wymagane pola połączenia.</value></data>

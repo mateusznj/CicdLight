@@ -34,11 +34,11 @@ public sealed class AzureDevOpsClient : IIntegrationClient
 
             var buildTasks = projects.Select(p => GetBuildsAsync(p, ct)).ToList();
             var releaseTasks = projects.Select(p => GetReleasesAsync(p, ct)).ToList();
-            var prTask = GetPullRequestsAsync(ct);
-            await Task.WhenAll(buildTasks.Cast<Task>().Concat(releaseTasks).Append(prTask));
+            var prTasks = projects.Where(ShowPullRequestsFor).Select(p => GetPullRequestsAsync(p, ct)).ToList();
+            await Task.WhenAll(buildTasks.Cast<Task>().Concat(releaseTasks).Concat(prTasks));
 
-            return new Snapshot(buildTasks.SelectMany(t => t.Result).ToList(), prTask.Result, null,
-                releaseTasks.SelectMany(t => t.Result).ToList());
+            return new Snapshot(buildTasks.SelectMany(t => t.Result).ToList(), prTasks.SelectMany(t => t.Result).ToList(), null,
+                releaseTasks.SelectMany(t => t.Result).ToList(), projects);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)
@@ -119,20 +119,27 @@ public sealed class AzureDevOpsClient : IIntegrationClient
         catch (HttpRequestException) { return []; }   // project without Releases
     }
 
-    private async Task<List<PullRequestInfo>> GetPullRequestsAsync(CancellationToken ct)
+    private bool ShowPullRequestsFor(string project) =>
+        !_s.ProjectNotifications.TryGetValue(project, out var settings) || settings.ShowPullRequests;
+
+    private async Task<List<PullRequestInfo>> GetPullRequestsAsync(string project, CancellationToken ct)
     {
-        var baseUrl = $"{_connection.OrganizationUrl}/_apis/git/pullrequests?searchCriteria.status=active&$top=50&{Api}";
+        var baseUrl = $"{_connection.OrganizationUrl}/{Uri.EscapeDataString(project)}/_apis/git/pullrequests?searchCriteria.status=active&$top=100&{Api}";
+        var allTask = GetAsync(baseUrl, ct);
         var mineTask = GetAsync($"{baseUrl}&searchCriteria.creatorId={_userId}", ct);
         var reviewTask = GetAsync($"{baseUrl}&searchCriteria.reviewerId={_userId}", ct);
-        await Task.WhenAll(mineTask, reviewTask);
+        await Task.WhenAll(allTask, mineTask, reviewTask);
 
-        string[] filter = string.IsNullOrWhiteSpace(_connection.Project) ? [] : [_connection.Project];
         var result = new Dictionary<int, PullRequestInfo>();
+        foreach (var pr in allTask.Result.GetProperty("value").EnumerateArray())
+        {
+            var info = ToPr(pr, isMine: false);
+            result[info.Id] = info;
+        }
 
         foreach (var pr in reviewTask.Result.GetProperty("value").EnumerateArray())
         {
             var info = ToPr(pr, isMine: false);
-            if (!InScope(info, filter)) continue;
             var myVote = pr.GetProperty("reviewers").EnumerateArray()
                 .Where(r => r.GetProperty("id").GetString() == _userId)
                 .Select(r => r.GetProperty("vote").GetInt32())
@@ -143,12 +150,13 @@ public sealed class AzureDevOpsClient : IIntegrationClient
         foreach (var pr in mineTask.Result.GetProperty("value").EnumerateArray())
         {
             var info = ToPr(pr, isMine: true);
-            if (InScope(info, filter)) result[info.Id] = info with { IsMine = true, NeedsMyReview = false };
+            result[info.Id] = info with { IsMine = true, NeedsMyReview = false };
         }
 
         var pullRequests = result.Values.OrderByDescending(p => p.Id).ToList();
         var visiblePullRequests = pullRequests.Where(p => p.NeedsMyReview).Take(5)
             .Concat(pullRequests.Where(p => p.IsMine).Take(3))
+            .Concat(pullRequests.Where(p => !p.IsMine && !p.NeedsMyReview).Take(5))
             .DistinctBy(p => p.Id)
             .ToList();
         var commentChecks = visiblePullRequests.Select(async p =>
@@ -177,9 +185,6 @@ public sealed class AzureDevOpsClient : IIntegrationClient
         catch (HttpRequestException) { return 0; }
         catch (InvalidOperationException) { return 0; }
     }
-
-    private static bool InScope(PullRequestInfo p, string[] projects) =>
-        projects.Length == 0 || projects.Contains(p.Project, StringComparer.OrdinalIgnoreCase);
 
     private PullRequestInfo ToPr(JsonElement pr, bool isMine)
     {

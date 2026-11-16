@@ -65,6 +65,7 @@ public sealed class ProjectNotificationSettings
     public bool BuildFixed { get; set; } = true;
     public bool ReviewRequested { get; set; } = true;
     public bool UnresolvedComments { get; set; } = true;
+    public bool ShowPullRequests { get; set; } = true;
 }
 
 public record BuildInfo(
@@ -104,7 +105,8 @@ public record Snapshot(
     IReadOnlyList<BuildInfo> Builds,
     IReadOnlyList<PullRequestInfo> PullRequests,
     string? Error,
-    IReadOnlyList<ReleaseInfo>? ReleaseList = null)
+    IReadOnlyList<ReleaseInfo>? ReleaseList = null,
+    IReadOnlyList<string>? ProjectList = null)
 {
     public IReadOnlyList<ReleaseInfo> Releases => ReleaseList ?? [];
     public int PullRequestsToRevise => PullRequests.Count(p => p.HasUnresolvedComments);
