@@ -11,7 +11,7 @@
   [🇵🇱 Polski](#-polski) · [🇬🇧 English](#-english) · [Pobierz / Download](https://github.com/mateusznj/CicdLight/releases/latest)
 
   <a href="https://github.com/mateusznj/CicdLight/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/mateusznj/CicdLight/build.yml?branch=main&label=build" alt="Build status" /></a>
-  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.1.0"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.1.0/total?label=downloads" alt="v1.1.0 release downloads" /></a>
+  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.1.1"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.1.1/total?label=downloads" alt="v1.1.1 release downloads" /></a>
   <a href="https://github.com/mateusznj/CicdLight/releases/latest"><img src="https://img.shields.io/github/v/release/mateusznj/CicdLight?label=version" alt="Latest release version" /></a>
 </div>
 
@@ -39,8 +39,8 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 | ![Czerwona ikona statusu](Assets/tray-status-failed.svg) | **Czerwony - niepowodzenie** | Build lub wydanie zakończyło się niepowodzeniem. |
 | ![Szara ikona statusu](Assets/tray-status-unknown.svg) | **Szary - brak danych** | Brak konfiguracji lub błąd pobierania statusu. |
 
-- **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y Azure DevOps i GitHub oczekujące na review oraz Twoje PR-y. Przy PR-ach wyświetlana jest liczba nierozwiązanych wątków komentarzy. Kliknięcie elementu otwiera go w przeglądarce.
-- **Połączenia:** lista repozytoriów GitHub i projektów Azure DevOps, każde z osobnym kluczem i wyborem obserwowanych pipeline'ów. Menu pozwala otworzyć osobno każdy skonfigurowany projekt Azure DevOps lub repozytorium GitHub. Sekret jest szyfrowany DPAPI (`CurrentUser`).
+- **Szybki podgląd:** ostatnie buildy (pipeline + branch), wydania, PR-y Azure DevOps i GitHub oczekujące na review oraz Twoje PR-y. Przy PR-ach wyświetlana jest liczba nierozwiązanych wątków komentarzy. Kliknięcie elementu otwiera go w przeglądarce; przycisk odświeżania pozwala natychmiast pobrać aktualne dane.
+- **Połączenia:** lista repozytoriów GitHub i projektów Azure DevOps, każde z osobnym kluczem i wyborem obserwowanych pipeline'ów. Połączenie można tymczasowo wyłączyć bez usuwania jego konfiguracji. Menu pozwala otworzyć osobno każdy skonfigurowany projekt Azure DevOps lub repozytorium GitHub. Sekret jest szyfrowany DPAPI (`CurrentUser`).
 - **GitHub Actions:** statusy ostatnich uruchomień wyświetlane obok buildów Azure DevOps. Publiczne repozytoria nie wymagają tokenu; prywatne używają tokenu przypisanego do danego repozytorium. Po osiągnięciu limitu API CicdLight wstrzymuje zapytania do czasu resetu i automatycznie ponawia odświeżanie.
 - **GitHub pull requests:** otwarte PR-y przypisane do zalogowanego użytkownika jako autora lub osoby proszonej o review. Wymagany jest token GitHub, aby rozpoznać bieżącego użytkownika; do repozytoriów prywatnych token jest wymagany również do odczytu PR-ów.
 - **Aktualizacje:** ręczne sprawdzenie najnowszego stabilnego wydania GitHub i otwarcie strony wydania; aplikacja nie pobiera ani nie instaluje aktualizacji automatycznie.
@@ -49,6 +49,8 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 - **Integracja z Windows:** opcjonalny autostart oraz uruchamianie tylko jednej instancji.
 
 ### Pobieranie i instalacja
+
+Nowości w wersji 1.1.1 opisano w [informacjach o wydaniu](RELEASE_NOTES_v1.1.1.md).
 
 1. Przejdź do [najnowszego wydania (GitHub Releases)](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Pobierz odpowiedni instalator z sekcji **Assets** i uruchom go.
@@ -105,8 +107,8 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 | ![Red status icon](Assets/tray-status-failed.svg) | **Red - failed** | A build or release has failed. |
 | ![Gray status icon](Assets/tray-status-unknown.svg) | **Gray - no status** | No configuration or a status retrieval error. |
 
-- **At-a-glance overview:** recent builds (pipeline + branch), releases, Azure DevOps and GitHub PRs awaiting review and your own PRs. Each PR shows its unresolved comment thread count. Click an item to open it in the browser.
-- **Connections:** a list of GitHub repositories and Azure DevOps projects, each with its own credential and selected pipelines. The menu can open each configured Azure DevOps project or GitHub repository separately. Secrets are protected with Windows DPAPI (`CurrentUser`).
+- **At-a-glance overview:** recent builds (pipeline + branch), releases, Azure DevOps and GitHub PRs awaiting review and your own PRs. Each PR shows its unresolved comment thread count. Click an item to open it in the browser; use the refresh button to fetch the latest data immediately.
+- **Connections:** a list of GitHub repositories and Azure DevOps projects, each with its own credential and selected pipelines. Connections can be temporarily disabled without removing their configuration. The menu can open each configured Azure DevOps project or GitHub repository separately. Secrets are protected with Windows DPAPI (`CurrentUser`).
 - **GitHub Actions:** recent workflow runs shown alongside Azure DevOps builds. Public repositories need no token; private repositories use a token stored on that repository's connection. When the API rate limit is reached, CicdLight pauses requests until reset and automatically resumes refreshing.
 - **GitHub pull requests:** open PRs authored by the authenticated user or requesting their review. A GitHub token is required to identify the current user; private repositories also require a token to read PRs.
 - **Updates:** manually checks the latest stable GitHub release and opens its release page; the app does not download or install updates automatically.
@@ -115,6 +117,8 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 - **Windows integration:** optional startup with Windows and single-instance execution.
 
 ### Download and installation
+
+See the [v1.1.1 release notes](RELEASE_NOTES_v1.1.1.md) for what's new.
 
 1. Open the [latest GitHub Release](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Download the appropriate installer from **Assets** and run it.

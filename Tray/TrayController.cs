@@ -26,6 +26,7 @@ public sealed class TrayController : IDisposable
     private Dictionary<string, int>? _previousUnresolvedComments;
     private string? _notificationUrl;
     private bool _refreshing;
+    private bool _refreshPending;
     private SettingsWindow? _settingsWindow;
 
     public TrayController()
@@ -37,7 +38,7 @@ public sealed class TrayController : IDisposable
             ToolTipText = "CicdLight"
         };
         _tray.ForceCreate();
-        _popup = new TrayPopupWindow(() => _ = RefreshAsync(), ShowSettings,
+        _popup = new TrayPopupWindow(() => _ = RefreshAsync(force: true), ShowSettings,
             () => _settings.Connections, Exit, OpenUrl);
         _tray.TrayIcon.MessageWindow.MouseEventReceived += (_, e) =>
         {
@@ -68,12 +69,17 @@ public sealed class TrayController : IDisposable
     private void ApplySettings()
     {
         Strings.SetLanguage(_settings.Language);
+        if (_refreshing)
+        {
+            _refreshPending = true;
+            _cts?.Cancel();
+        }
         foreach (var client in _clients)
         {
             client.Client.Dispose();
         }
         _clients.Clear();
-        foreach (var connection in _settings.Connections)
+        foreach (var connection in _settings.Connections.Where(connection => connection.Enabled))
         {
             IIntegrationClient client = connection.Provider switch
             {
@@ -91,27 +97,36 @@ public sealed class TrayController : IDisposable
         _ = RefreshAsync();
     }
 
-    private async Task RefreshAsync()
+    private async Task RefreshAsync(bool force = false)
     {
         if (_refreshing)
         {
+            if (force)
+            {
+                _refreshPending = true;
+                _cts?.Cancel();
+            }
             return;
         }
         if (_clients.Count == 0)
         {
-            _snapshot = Snapshot.Empty(Strings.Get("Tray_NotConfigured"));
+            var message = _settings.IsConfigured
+                ? Strings.Get("Tray_NoActiveConnections")
+                : Strings.Get("Tray_NotConfigured");
+            _all = Snapshot.Empty();
+            _snapshot = Snapshot.Empty(message);
             Update();
             return;
         }
 
         _refreshing = true;
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
+        var refreshCts = new CancellationTokenSource();
+        _cts = refreshCts;
         try
         {
             var requests = _clients.Select(async entry =>
             {
-                var snapshot = await entry.Client.FetchAsync(_cts.Token);
+                var snapshot = await entry.Client.FetchAsync(refreshCts.Token);
                 entry.Connection.LastError = snapshot.Error;
                 return (entry.Connection, Snapshot: snapshot);
             });
@@ -144,7 +159,17 @@ public sealed class TrayController : IDisposable
         finally
         {
             _refreshing = false;
+            if (ReferenceEquals(_cts, refreshCts))
+            {
+                _cts = null;
+            }
+            refreshCts.Dispose();
             UpdateRefreshInterval();
+            if (_refreshPending)
+            {
+                _refreshPending = false;
+                _ = RefreshAsync();
+            }
         }
     }
 

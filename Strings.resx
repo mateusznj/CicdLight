@@ -5,6 +5,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Tray_NotConfigured" xml:space="preserve"><value>Not configured</value></data>
+  <data name="Tray_NoActiveConnections" xml:space="preserve"><value>All connections are disabled</value></data>
   <data name="Tray_ConnectionErrors" xml:space="preserve"><value>{0} connection(s) need attention. Open Settings for details.</value></data>
   <data name="Tray_ConnectionErrorShort" xml:space="preserve"><value>Connection issue. Open Settings for details.</value></data>
   <data name="Status_Summary" xml:space="preserve"><value>{0} failed, {1} to review, {2} PRs to revise</value></data>
@@ -22,6 +23,7 @@
   <data name="Toast_TestNotificationText" xml:space="preserve"><value>CicdLight notifications are working.</value></data>
   <data name="Toast_NoPipelines" xml:space="preserve"><value>No pipelines loaded yet. Check the settings and refresh first.</value></data>
   <data name="Popup_Refresh" xml:space="preserve"><value>Refresh now</value></data>
+  <data name="Popup_Refreshing" xml:space="preserve"><value>Refreshing...</value></data>
   <data name="Popup_UnresolvedCommentsCount" xml:space="preserve"><value>Unresolved threads: {0}</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>Settings...</value></data>
   <data name="Menu_Choose" xml:space="preserve"><value>Choose pipelines...</value></data>
@@ -80,6 +82,7 @@
   <data name="Connection_RequiredFields" xml:space="preserve"><value>Complete the required connection fields.</value></data>
   <data name="Connection_AlreadyExists" xml:space="preserve"><value>This connection is already in the list.</value></data>
   <data name="Connection_Configured" xml:space="preserve"><value>Configured</value></data>
+  <data name="Connection_Active" xml:space="preserve"><value>Active</value></data>
   <data name="Connection_Pipelines" xml:space="preserve"><value>Choose pipelines</value></data>
   <data name="Pipeline_NoItems" xml:space="preserve"><value>No pipeline runs are available for this connection yet. Refresh and try again.</value></data>
   <data name="Button_AddConnection" xml:space="preserve"><value>Add connection</value></data>

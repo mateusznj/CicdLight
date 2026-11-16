@@ -48,7 +48,12 @@ public sealed class TrayPopupWindow : Window
         var subtle = (Style)Application.Current.Resources["SubtleButtonStyle"];
 
         var refreshBtn = new Button { Content = new FontIcon { Glyph = Icons.GetGlyph(AppIcon.Refresh), FontSize = 16 }, Style = subtle };
-        ToolTipService.SetToolTip(refreshBtn, Strings.Get("Popup_Refresh"));        refreshBtn.Click += (_, _) => refresh();
+        ToolTipService.SetToolTip(refreshBtn, Strings.Get("Popup_Refresh"));
+        refreshBtn.Click += (_, _) =>
+        {
+            _status.Text = Strings.Get("Popup_Refreshing");
+            refresh();
+        };
 
         var gear = new Button { Content = new FontIcon { Glyph = Icons.GetGlyph(AppIcon.Settings), FontSize = 16 }, Style = subtle };
         var flyout = new MenuFlyout();

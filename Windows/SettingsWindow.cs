@@ -441,6 +441,14 @@ public sealed class SettingsWindow : Window
                 TextWrapping = TextWrapping.Wrap
             };
             var texts = new StackPanel { Spacing = 2, Children = { title, subtitle } };
+            var enabled = new CheckBox
+            {
+                Content = Strings.Get("Connection_Active"),
+                IsChecked = connection.Enabled,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            enabled.Checked += (_, _) => SetConnectionEnabled(connection, true);
+            enabled.Unchecked += (_, _) => SetConnectionEnabled(connection, false);
             var pipelines = new Button { Content = Strings.Get("Connection_Pipelines") };
             pipelines.Click += (_, _) => ShowPipelineConfiguration(connection);
             var edit = new Button { Content = Strings.Get("Button_Edit") };
@@ -460,12 +468,15 @@ public sealed class SettingsWindow : Window
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.Children.Add(texts);
-            Grid.SetColumn(pipelines, 1);
+            Grid.SetColumn(enabled, 1);
+            row.Children.Add(enabled);
+            Grid.SetColumn(pipelines, 2);
             row.Children.Add(pipelines);
-            Grid.SetColumn(edit, 2);
+            Grid.SetColumn(edit, 3);
             row.Children.Add(edit);
-            Grid.SetColumn(remove, 3);
+            Grid.SetColumn(remove, 4);
             row.Children.Add(remove);
             _connections.Children.Add(row);
         }
@@ -474,6 +485,20 @@ public sealed class SettingsWindow : Window
                 _connections.Children.Add(new TextBlock { Text = Strings.Get("Connections_Empty"), Opacity = 0.7 });
         }
         RenderPipelineHub();
+    }
+
+    private void SetConnectionEnabled(IntegrationConnection connection, bool enabled)
+    {
+        var current = _s.Connections.FirstOrDefault(item => item.Id == connection.Id);
+        if (current == null || current.Enabled == enabled)
+        {
+            return;
+        }
+
+        current.Enabled = enabled;
+        _s.Save();
+        _onSaved();
+        RenderConnections();
     }
 
     public void RefreshConnectionStatuses() => RenderConnections();

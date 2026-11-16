@@ -14,6 +14,7 @@ public sealed class IntegrationConnection
     public string EncryptedCredential { get; set; } = "";
     public List<string> SelectedItems { get; set; } = [];
     public bool HasSelection { get; set; }
+    public bool Enabled { get; set; } = true;
 
     [JsonIgnore]
     public string? LastError { get; set; }
