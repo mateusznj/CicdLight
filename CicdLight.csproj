@@ -23,6 +23,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+  <None Include=".github\copilot-instructions.md" />
+  <None Include=".github\csharp-coding-style.instructions.md" />
+  <None Include=".github\localization.instructions.md" />
   <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\scenario-instructions.md" />
   <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks.md" />
   <None Include=".github\upgrades\scenarios\dotnet-version-upgrade\tasks\01-upgrade-project-and-winui-shell\progress-details.md" />
