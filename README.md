@@ -11,7 +11,7 @@
   [🇵🇱 Polski](#-polski) · [🇬🇧 English](#-english) · [Pobierz / Download](https://github.com/mateusznj/CicdLight/releases/latest)
 
   <a href="https://github.com/mateusznj/CicdLight/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/mateusznj/CicdLight/build.yml?branch=main&label=build" alt="Build status" /></a>
-  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.0.2"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.0.2/total?label=downloads" alt="v1.0.2 release downloads" /></a>
+  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.1.0"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.1.0/total?label=downloads" alt="v1.1.0 release downloads" /></a>
   <a href="https://github.com/mateusznj/CicdLight/releases/latest"><img src="https://img.shields.io/github/v/release/mateusznj/CicdLight?label=version" alt="Latest release version" /></a>
 </div>
 
@@ -55,8 +55,6 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 3. Uruchom CicdLight i otwórz **Settings**. Wybierz dostawcę, podaj organizację i projekt Azure DevOps wraz z PAT albo repozytorium GitHub wraz z opcjonalnym tokenem. Każde połączenie dodaj osobno, a potem wybierz obserwowane pipeline'y przy tym wpisie.
 
 Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tokena z uprawnieniem **Actions: Read**. Do odczytu PR-ów token musi mieć uprawnienie **Pull requests: Read**; token jest też potrzebny do rozpoznania Twoich PR-ów i próśb o review. Dostęp do publicznych uruchomień Actions nie wymaga tokenu.
-
-> Pliki instalacyjne znajdują się również w katalogu [`artifacts`](artifacts), ale zalecanym miejscem pobierania opublikowanych wersji jest zakładka **Releases**.
 
 ### Wymagania
 
@@ -123,8 +121,6 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 3. Open **Settings** and choose a provider. Add each Azure DevOps organization/project with its PAT or each GitHub repository with its optional token as a separate connection. Then choose the pipelines to monitor from that connection's row.
 
 For private repositories, use a fine-grained token with **Actions: Read** and **Pull requests: Read** access. A token is also required to identify your own PRs and review requests. Public Actions runs can be read without a token.
-
-> Installer files are also available in [`artifacts`](artifacts), but **Releases** is the recommended location for downloading published versions.
 
 ### Requirements
 
