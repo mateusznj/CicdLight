@@ -31,7 +31,10 @@ public class AppSettings
     {
         get
         {
-            if (string.IsNullOrEmpty(EncryptedPat)) return "";
+            if (string.IsNullOrEmpty(EncryptedPat))
+            {
+                return "";
+            }
             try
             {
                 var bytes = ProtectedData.Unprotect(Convert.FromBase64String(EncryptedPat), null, DataProtectionScope.CurrentUser);
@@ -48,7 +51,10 @@ public class AppSettings
     {
         get
         {
-            if (string.IsNullOrEmpty(EncryptedGitHubToken)) return "";
+            if (string.IsNullOrEmpty(EncryptedGitHubToken))
+            {
+                return "";
+            }
             try
             {
                 var bytes = ProtectedData.Unprotect(Convert.FromBase64String(EncryptedGitHubToken), null, DataProtectionScope.CurrentUser);
@@ -92,7 +98,10 @@ public class AppSettings
             if (File.Exists(FilePath))
             {
                 var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
-                if (settings.MigrateLegacyConnections()) settings.Save();
+                if (settings.MigrateLegacyConnections())
+                {
+                    settings.Save();
+                }
                 return settings;
             }
         }
@@ -108,7 +117,10 @@ public class AppSettings
 
     private bool MigrateLegacyConnections()
     {
-        if (Connections.Count > 0) return false;
+        if (Connections.Count > 0)
+        {
+            return false;
+        }
 
         var oldPat = Pat;
         if (!string.IsNullOrWhiteSpace(Organization) && !string.IsNullOrWhiteSpace(oldPat))
@@ -141,7 +153,10 @@ public class AppSettings
             Connections.Add(connection);
         }
 
-        if (Connections.Count == 0) return false;
+        if (Connections.Count == 0)
+        {
+            return false;
+        }
 
         Organization = "";
         Projects = "";
@@ -154,13 +169,22 @@ public class AppSettings
 
     private void MigrateSelection(IntegrationConnection connection, string? project)
     {
-        if (WatchedItems.Count == 0) return;
+        if (WatchedItems.Count == 0)
+        {
+            return;
+        }
         foreach (var key in WatchedItems)
         {
             var separator = key.IndexOf(':');
-            if (separator < 0) continue;
+            if (separator < 0)
+            {
+                continue;
+            }
             var resource = key[(separator + 1)..];
-            if (project != null && !resource.StartsWith(project + "/", StringComparison.OrdinalIgnoreCase)) continue;
+            if (project != null && !resource.StartsWith(project + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
             connection.SelectedItems.Add($"{key[..(separator + 1)]}{connection.Id}:{resource}");
         }
     }

@@ -82,7 +82,10 @@ public sealed class PipelineConfigurationControl : UserControl
             {
                 var part = group.Where(i => i.Key.StartsWith(prefix))
                     .OrderBy(i => i.Text, StringComparer.CurrentCultureIgnoreCase).ToList();
-                if (part.Count == 0) continue;
+                if (part.Count == 0)
+                {
+                    continue;
+                }
 
                 body.Children.Add(new TextBlock
                 {
@@ -111,9 +114,15 @@ public sealed class PipelineConfigurationControl : UserControl
             }
             header.Click += (_, _) =>
             {
-                if (updating) return;
+                if (updating)
+                {
+                    return;
+                }
                 var value = header.IsChecked == true;
-                foreach (var c in children) c.IsChecked = value;
+                foreach (var c in children)
+                {
+                    c.IsChecked = value;
+                }
                 SyncHeader();
             };
             foreach (var c in children)
@@ -140,14 +149,16 @@ public sealed class PipelineConfigurationControl : UserControl
             var chosen = _boxes.Where(b => b.Box.IsChecked == true).Select(b => b.Key).ToList();
             var savedNotifications = new Dictionary<string, ProjectNotificationSettings>(notifications, StringComparer.OrdinalIgnoreCase);
             foreach (var (project, failed, fixedBuild, review, unresolvedComments, showPullRequests) in _notificationBoxes)
-                savedNotifications[project] = new ProjectNotificationSettings
-                {
-                    BuildFailed = failed.IsChecked == true,
-                    BuildFixed = fixedBuild.IsChecked == true,
-                    ReviewRequested = review.IsChecked == true,
-                    UnresolvedComments = unresolvedComments.IsChecked == true,
-                    ShowPullRequests = showPullRequests.IsChecked == true
-                };
+            {
+                    savedNotifications[project] = new ProjectNotificationSettings
+                    {
+                        BuildFailed = failed.IsChecked == true,
+                        BuildFixed = fixedBuild.IsChecked == true,
+                        ReviewRequested = review.IsChecked == true,
+                        UnresolvedComments = unresolvedComments.IsChecked == true,
+                        ShowPullRequests = showPullRequests.IsChecked == true
+                    };
+            }
             onSaved(chosen, savedNotifications);
         };
         cancel.Click += (_, _) => onCancelled();

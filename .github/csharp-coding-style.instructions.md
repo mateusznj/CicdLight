@@ -26,7 +26,8 @@ description: "Dla kodu C# w CicdLight stosuj konwencje repozytorium dotyczące n
 - Namespace file-scoped (`namespace CicdLight;`).
 - Wcięcia: 4 spacje; nawiasy klamrowe w stylu Allman (nowa linia).
 - Zawsze używaj klamr w `if`, `else`, `for`, `foreach`, `while`, `using` i `lock`, także dla jednej instrukcji; nie stosuj jednolinijkowców typu `if (x) return;` ani `foreach (...) DoSomething();` - klamry i ciało w osobnych liniach.
-- Pola prywatne: `_camelCase`; stałe i typy: `PascalCase`; parametry i zmienne lokalne: `camelCase`.
+- Early return, `continue` i `break` również zapisuj z klamrami w osobnych liniach: `if (!isNew) return;` zapisz jako `if (!isNew)`, `{`, `return;`, `}`.
+- Pola prywatne: `_camelCase`; stałe
 - Preferuj `var`, gdy typ wynika z prawej strony.
 - Preferuj `record` dla modeli danych, `sealed` dla klas bez dziedziczenia.
 - Używaj collection expressions (`[]`) i wyrażeń `=>` dla krótkich metod.

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -59,13 +59,19 @@ public sealed class TrayController : IDisposable
 
         ApplySettings();
 
-        if (!_settings.IsConfigured) ShowSettings();
+        if (!_settings.IsConfigured)
+        {
+            ShowSettings();
+        }
     }
 
     private void ApplySettings()
     {
         Strings.SetLanguage(_settings.Language);
-        foreach (var client in _clients) client.Client.Dispose();
+        foreach (var client in _clients)
+        {
+            client.Client.Dispose();
+        }
         _clients.Clear();
         foreach (var connection in _settings.Connections)
         {
@@ -87,7 +93,10 @@ public sealed class TrayController : IDisposable
 
     private async Task RefreshAsync()
     {
-        if (_refreshing) return;
+        if (_refreshing)
+        {
+            return;
+        }
         if (_clients.Count == 0)
         {
             _snapshot = Snapshot.Empty(Strings.Get("Tray_NotConfigured"));
@@ -108,7 +117,9 @@ public sealed class TrayController : IDisposable
             });
             var results = await Task.WhenAll(requests);
             foreach (var result in results)
-                _connectionProjects[result.Connection.Id] = result.Snapshot.ProjectList ?? [];
+            {
+                    _connectionProjects[result.Connection.Id] = result.Snapshot.ProjectList ?? [];
+            }
             var errors = results.Count(result => result.Snapshot.Error != null);
             _all = new Snapshot(
                 results.SelectMany(result => result.Snapshot.Builds).ToList(),
@@ -153,7 +164,9 @@ public sealed class TrayController : IDisposable
         {
             var retryDelay = rateLimitRetry - DateTimeOffset.UtcNow;
             if (retryDelay > TimeSpan.Zero && retryDelay < interval)
-                interval = retryDelay;
+            {
+                    interval = retryDelay;
+            }
         }
 
         _timer.Interval = interval;
@@ -172,17 +185,26 @@ public sealed class TrayController : IDisposable
             foreach (var b in builds.Values.Where(b => !b.IsRunning && b.Result != null))
             {
                 _previousBuilds.TryGetValue(b.Key, out var old);
-                if (old != null && old.Id == b.Id && old.IsRunning == b.IsRunning) continue;
+                if (old != null && old.Id == b.Id && old.IsRunning == b.IsRunning)
+                {
+                    continue;
+                }
                 var notify = GetProjectNotifications(b.Project);
 
                 if (b.IsFailed && notify.BuildFailed)
-                    Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, NotificationIcon.Error);
+                {
+                        Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, NotificationIcon.Error);
+                }
                 else if (b.IsSucceeded && old != null && old.IsFailed && notify.BuildFixed)
-                    Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, NotificationIcon.Info);
+                {
+                        Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, NotificationIcon.Info);
+                }
             }
 
             foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Key) && GetProjectNotifications(p.Project).ReviewRequested))
-                Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
+            {
+                    Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
+            }
 
             foreach (var p in s.PullRequests.Where(p =>
                          p.UnresolvedCommentCount > _previousUnresolvedComments.GetValueOrDefault(p.Key) &&
@@ -229,14 +251,20 @@ public sealed class TrayController : IDisposable
             ? Strings.Format("Tooltip_Error", _snapshot.Error)
             : Strings.Format("Tooltip_Summary", failed, reviews, _snapshot.PullRequestsToRevise);
         _tray.ToolTipText = text.Length > 127 ? text[..127] : text;
-        if (_popup.IsVisible) _popup.Render(_snapshot);
+        if (_popup.IsVisible)
+        {
+            _popup.Render(_snapshot);
+        }
     }
 
     private void TogglePopup()
     {
         // Kliknięcie w ikonę dezaktywuje popup (Hide), więc ignorujemy ponowne otwarcie tuż po zamknięciu.
         if (_popup.IsVisible) { _popup.Hide(); return; }
-        if ((DateTime.UtcNow - _popup.HiddenAtUtc).TotalMilliseconds < 300) return;
+        if ((DateTime.UtcNow - _popup.HiddenAtUtc).TotalMilliseconds < 300)
+        {
+            return;
+        }
         _popup.Show(_snapshot);
     }
 
@@ -263,7 +291,9 @@ public sealed class TrayController : IDisposable
     private IReadOnlyList<string> GetProjects(IntegrationConnection connection)
     {
         if (connection.Provider == IntegrationProvider.GitHub)
-            return [GitHubActionsClient.GetRepositoryName(connection.Repository)];
+        {
+                return [GitHubActionsClient.GetRepositoryName(connection.Repository)];
+        }
 
         return _all.Builds.Where(build => build.ConnectionId == connection.Id).Select(build => build.Project)
             .Concat(_all.Releases.Where(release => release.ConnectionId == connection.Id).Select(release => release.Project))
@@ -287,7 +317,9 @@ public sealed class TrayController : IDisposable
     private static void OpenUrl(string? url)
     {
         if (!string.IsNullOrEmpty(url))
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
     }
 
     private static Icon MakeIcon(Health health)
@@ -328,7 +360,10 @@ public sealed class TrayController : IDisposable
 
     private static void DestroyIconHandle(Icon? icon)
     {
-        if (icon != null) DestroyIcon(icon.Handle);
+        if (icon != null)
+        {
+            DestroyIcon(icon.Handle);
+        }
     }
 
     private void Exit()
@@ -341,7 +376,10 @@ public sealed class TrayController : IDisposable
     {
         _timer.Stop();
         _cts?.Cancel();
-        foreach (var client in _clients) client.Client.Dispose();
+        foreach (var client in _clients)
+        {
+            client.Client.Dispose();
+        }
         _clients.Clear();
         _tray.Dispose();
     }

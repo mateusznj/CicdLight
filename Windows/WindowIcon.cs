@@ -9,6 +9,9 @@ internal static class WindowIcon
     /// <summary>Ustawia ikonę aplikacji na pasku tytułu i w pasku zadań.</summary>
     public static void Apply(Window window)
     {
-        if (File.Exists(Path)) window.AppWindow.SetIcon(Path);
+        if (File.Exists(Path))
+        {
+            window.AppWindow.SetIcon(Path);
+        }
     }
 }

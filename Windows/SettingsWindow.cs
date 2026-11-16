@@ -163,7 +163,10 @@ public sealed class SettingsWindow : Window
         });
         navigation.SelectionChanged += (_, e) =>
         {
-            if (e.SelectedItem is not NavigationViewItem item) return;
+            if (e.SelectedItem is not NavigationViewItem item)
+            {
+                return;
+            }
             ShowPage((item.Tag as string) switch
             {
                 "general" => _generalPage,
@@ -202,9 +205,11 @@ public sealed class SettingsWindow : Window
         _pipelineHubScroll.Visibility = ReferenceEquals(page, _pipelineHubPage) ? Visibility.Visible : Visibility.Collapsed;
         _aboutScroll.Visibility = ReferenceEquals(page, _aboutPage) ? Visibility.Visible : Visibility.Collapsed;
         if (_settingsFooter != null)
-            _settingsFooter.Visibility = ReferenceEquals(page, _pipelinePage) || ReferenceEquals(page, _pipelineHubPage) || ReferenceEquals(page, _aboutPage)
-                ? Visibility.Collapsed
-                : Visibility.Visible;
+        {
+                _settingsFooter.Visibility = ReferenceEquals(page, _pipelinePage) || ReferenceEquals(page, _pipelineHubPage) || ReferenceEquals(page, _aboutPage)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
+        }
     }
 
     private static string GetCurrentVersion()
@@ -219,7 +224,10 @@ public sealed class SettingsWindow : Window
     {
         var normalized = value.Trim().TrimStart('v', 'V');
         var suffix = normalized.IndexOfAny(['-', '+']);
-        if (suffix >= 0) normalized = normalized[..suffix];
+        if (suffix >= 0)
+        {
+            normalized = normalized[..suffix];
+        }
         return Version.TryParse(normalized, out var version) ? version : null;
     }
 
@@ -243,7 +251,9 @@ public sealed class SettingsWindow : Window
             var current = ParseVersion(currentText);
             var latest = ParseVersion(tag);
             if (current == null || latest == null)
-                throw new InvalidOperationException(Strings.Get("Update_InvalidVersion"));
+            {
+                    throw new InvalidOperationException(Strings.Get("Update_InvalidVersion"));
+            }
 
             if (latest > current)
             {
@@ -316,7 +326,9 @@ public sealed class SettingsWindow : Window
             _pipelineHubPage.Children.Add(open);
         }
         if (_s.Connections.Count == 0)
-            _pipelineHubPage.Children.Add(new TextBlock { Text = Strings.Get("Connections_Empty"), Opacity = 0.7 });
+        {
+                _pipelineHubPage.Children.Add(new TextBlock { Text = Strings.Get("Connections_Empty"), Opacity = 0.7 });
+        }
     }
 
     private void ShowPipelineConfiguration(IntegrationConnection connection, FrameworkElement? returnPage = null)
@@ -402,8 +414,14 @@ public sealed class SettingsWindow : Window
     private void SaveConnection(IntegrationConnection connection)
     {
         var existingIndex = _s.Connections.FindIndex(item => item.Id == connection.Id);
-        if (existingIndex < 0) _s.Connections.Add(connection);
-        else _s.Connections[existingIndex] = connection;
+        if (existingIndex < 0)
+        {
+            _s.Connections.Add(connection);
+        }
+        else
+        {
+            _s.Connections[existingIndex] = connection;
+        }
         _s.Save();
         _onSaved();
         RenderConnections();
@@ -452,7 +470,9 @@ public sealed class SettingsWindow : Window
             _connections.Children.Add(row);
         }
         if (_s.Connections.Count == 0)
-            _connections.Children.Add(new TextBlock { Text = Strings.Get("Connections_Empty"), Opacity = 0.7 });
+        {
+                _connections.Children.Add(new TextBlock { Text = Strings.Get("Connections_Empty"), Opacity = 0.7 });
+        }
         RenderPipelineHub();
     }
 
@@ -475,7 +495,10 @@ public sealed class SettingsWindow : Window
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = _connections.XamlRoot
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
 
         _s.Connections.Remove(connection);
         _s.Save();

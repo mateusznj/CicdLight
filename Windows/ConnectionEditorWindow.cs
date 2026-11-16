@@ -120,7 +120,10 @@ public sealed class ConnectionEditorWindow : Window
         _draft.Organization = isAzure ? target : "";
         _draft.Project = isAzure ? project : "";
         _draft.Repository = isAzure ? "" : target;
-        if (!string.IsNullOrEmpty(credential)) _draft.Credential = credential;
+        if (!string.IsNullOrEmpty(credential))
+        {
+            _draft.Credential = credential;
+        }
 
         if (!isAzure)
         {

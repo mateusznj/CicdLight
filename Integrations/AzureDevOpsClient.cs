@@ -56,9 +56,14 @@ public sealed class AzureDevOpsClient : IIntegrationClient
     private static DateTimeOffset? ParseTime(System.Text.Json.JsonElement b)
     {
         foreach (var name in new[] { "finishTime", "startTime", "queueTime" })
+        {
             if (b.TryGetProperty(name, out var p) && p.ValueKind == System.Text.Json.JsonValueKind.String
                 && DateTimeOffset.TryParse(p.GetString(), out var t))
+            {
                 return t;
+            }
+        }
+
         return null;
     }
 
@@ -67,7 +72,10 @@ public sealed class AzureDevOpsClient : IIntegrationClient
     {
         var url = $"{_connection.OrganizationUrl}/{Uri.EscapeDataString(project)}/_apis/build/builds" +
                   $"?$top=100&queryOrder=queueTimeDescending&{Api}";
-        if (_s.OnlyMyBuilds) url += $"&requestedFor={_userId}";
+        if (_s.OnlyMyBuilds)
+        {
+            url += $"&requestedFor={_userId}";
+        }
 
         var json = await GetAsync(url, ct);
         return json.GetProperty("value").EnumerateArray()
@@ -202,11 +210,15 @@ public sealed class AzureDevOpsClient : IIntegrationClient
     {
         using var resp = await _http.GetAsync(url, ct);
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            throw new InvalidOperationException(Strings.Get("Error_Auth"));
+        {
+                throw new InvalidOperationException(Strings.Get("Error_Auth"));
+        }
         resp.EnsureSuccessStatusCode();
         var text = await resp.Content.ReadAsStringAsync(ct);
         if (text.TrimStart().StartsWith('<'))
-            throw new InvalidOperationException(Strings.Get("Error_Html"));
+        {
+                throw new InvalidOperationException(Strings.Get("Error_Html"));
+        }
         return JsonDocument.Parse(text).RootElement.Clone();
     }
 

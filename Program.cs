@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Dispatching;
 
 namespace CicdLight;
 
@@ -10,7 +10,10 @@ public static class Program
         WinRT.ComWrappersSupport.InitializeComWrappers();
 
         using var mutex = new Mutex(true, @"Local\CicdLight.SingleInstance", out var isNew);
-        if (!isNew) return;
+        if (!isNew)
+        {
+            return;
+        }
 
         Microsoft.UI.Xaml.Application.Start(p =>
         {

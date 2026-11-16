@@ -80,7 +80,10 @@ public sealed class TrayPopupWindow : Window
 
         Activated += (_, e) =>
         {
-            if (e.WindowActivationState == WindowActivationState.Deactivated) Hide();
+            if (e.WindowActivationState == WindowActivationState.Deactivated)
+            {
+                Hide();
+            }
         };
     }
 
@@ -90,7 +93,10 @@ public sealed class TrayPopupWindow : Window
 
         GetCursorPos(out var cursor);
         var dpi = GetDpiForWindow(_hwnd);
-        if (dpi == 0) dpi = 96;
+        if (dpi == 0)
+        {
+            dpi = 96;
+        }
         var w = BaseWidth * (int)dpi / 96;
         var h = BaseHeight * (int)dpi / 96;
         var margin = 8 * (int)dpi / 96;
@@ -109,7 +115,10 @@ public sealed class TrayPopupWindow : Window
 
     public void Hide()
     {
-        if (!IsVisible) return;
+        if (!IsVisible)
+        {
+            return;
+        }
         IsVisible = false;
         HiddenAtUtc = DateTime.UtcNow;
         AppWindow.Hide();
@@ -128,30 +137,54 @@ public sealed class TrayPopupWindow : Window
         var builds = s.Builds.OrderByDescending(b => b.Time ?? DateTimeOffset.MinValue).Take(MaxBuilds).ToList();
         AddHeader(Strings.Get("Section_Pipelines"), builds.Count == 0 ? null : Strings.Format("Section_Latest", builds.Count));
         foreach (var b in builds)
-            AddRow(BuildGlyph(b), b.Definition, $"{b.Branch} · {b.RequestedFor}", Ago(b.Time), b.Url, $"{b.Project} #{b.BuildNumber}");
+        {
+                AddRow(BuildGlyph(b), b.Definition, $"{b.Branch} · {b.RequestedFor}", Ago(b.Time), b.Url, $"{b.Project} #{b.BuildNumber}");
+        }
 
         var releases = s.Releases.OrderByDescending(r => r.IsFailed).ThenByDescending(r => r.IsRunning).Take(3).ToList();
-        if (releases.Count > 0) AddHeader(Strings.Get("Section_Releases"), null);
+        if (releases.Count > 0)
+        {
+            AddHeader(Strings.Get("Section_Releases"), null);
+        }
         foreach (var r in releases)
-            AddRow(r.IsRunning ? AppIcon.Running : r.IsFailed ? AppIcon.Failed : AppIcon.Ok, r.Definition, r.ReleaseName, "", r.Url, r.Project);
+        {
+                AddRow(r.IsRunning ? AppIcon.Running : r.IsFailed ? AppIcon.Failed : AppIcon.Ok, r.Definition, r.ReleaseName, "", r.Url, r.Project);
+        }
 
         var review = s.PullRequests.Where(p => p.NeedsMyReview).Take(5).ToList();
-        if (review.Count > 0) AddHeader(Strings.Get("Section_Review"), $"{reviews}");
+        if (review.Count > 0)
+        {
+            AddHeader(Strings.Get("Section_Review"), $"{reviews}");
+        }
         foreach (var p in review)
-            AddRow(AppIcon.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.UnresolvedCommentCount);
+        {
+                AddRow(AppIcon.Review, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.UnresolvedCommentCount);
+        }
 
         var mine = s.PullRequests.Where(p => p.IsMine).Take(3).ToList();
-        if (mine.Count > 0) AddHeader(Strings.Get("Section_MyPrs"), null);
+        if (mine.Count > 0)
+        {
+            AddHeader(Strings.Get("Section_MyPrs"), null);
+        }
         foreach (var p in mine)
-            AddRow(AppIcon.PullRequest, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project, p.UnresolvedCommentCount);
+        {
+                AddRow(AppIcon.PullRequest, $"#{p.Id} {p.Title}", p.Repository, "", p.Url, p.Project, p.UnresolvedCommentCount);
+        }
 
         var others = s.PullRequests.Where(p => !p.IsMine && !p.NeedsMyReview).Take(5).ToList();
-        if (others.Count > 0) AddHeader(Strings.Get("Section_OtherPrs"), null);
+        if (others.Count > 0)
+        {
+            AddHeader(Strings.Get("Section_OtherPrs"), null);
+        }
         foreach (var p in others)
-            AddRow(AppIcon.PullRequest, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.UnresolvedCommentCount);
+        {
+                AddRow(AppIcon.PullRequest, $"#{p.Id} {p.Title}", $"{p.Repository} · {p.Author}", "", p.Url, p.Project, p.UnresolvedCommentCount);
+        }
 
         if (_list.Children.Count == 0)
-            _list.Children.Add(new TextBlock { Text = s.Error ?? Strings.Get("Popup_Nothing"), Margin = new Thickness(8), TextWrapping = TextWrapping.Wrap, Opacity = 0.7 });
+        {
+                _list.Children.Add(new TextBlock { Text = s.Error ?? Strings.Get("Popup_Nothing"), Margin = new Thickness(8), TextWrapping = TextWrapping.Wrap, Opacity = 0.7 });
+        }
     }
 
     private void AddHeader(string text, string? note)
@@ -245,7 +278,9 @@ public sealed class TrayPopupWindow : Window
     private void PopulateConnectionMenus(MenuFlyout flyout)
     {
         while (flyout.Items.Count > 1)
-            flyout.Items.RemoveAt(1);
+        {
+                flyout.Items.RemoveAt(1);
+        }
 
         var connections = _getConnections();
         AddConnectionMenu(flyout, Strings.Get("Menu_OpenAzureDevOps"), AppIcon.AzureDevOps,
@@ -265,7 +300,10 @@ public sealed class TrayPopupWindow : Window
         IEnumerable<IntegrationConnection> connections, Func<IntegrationConnection, string> getUrl)
     {
         var items = connections.ToList();
-        if (items.Count == 0) return;
+        if (items.Count == 0)
+        {
+            return;
+        }
 
         var providerMenu = new MenuFlyoutSubItem
         {
@@ -286,11 +324,23 @@ public sealed class TrayPopupWindow : Window
 
     private static string Ago(DateTimeOffset? t)
     {
-        if (t == null) return "";
+        if (t == null)
+        {
+            return "";
+        }
         var age = DateTimeOffset.Now - t.Value;
-        if (age < TimeSpan.FromMinutes(1)) return Strings.Get("Ago_Now");
-        if (age < TimeSpan.FromHours(1)) return Strings.Format("Ago_Min", (int)age.TotalMinutes);
-        if (age < TimeSpan.FromDays(1)) return Strings.Format("Ago_Hour", (int)age.TotalHours);
+        if (age < TimeSpan.FromMinutes(1))
+        {
+            return Strings.Get("Ago_Now");
+        }
+        if (age < TimeSpan.FromHours(1))
+        {
+            return Strings.Format("Ago_Min", (int)age.TotalMinutes);
+        }
+        if (age < TimeSpan.FromDays(1))
+        {
+            return Strings.Format("Ago_Hour", (int)age.TotalHours);
+        }
         return Strings.Format("Ago_Day", (int)age.TotalDays);
     }
 

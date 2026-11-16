@@ -20,7 +20,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("CicdLight/1.0");
         _http.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
         if (!string.IsNullOrWhiteSpace(connection.Credential))
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", connection.Credential);
+        {
+                _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", connection.Credential);
+        }
     }
 
     public async Task<Snapshot> FetchAsync(CancellationToken ct)
@@ -105,7 +107,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
         }).ToList();
 
         if (currentUser == null)
-            return (pullRequests, null);
+        {
+                return (pullRequests, null);
+        }
 
         var visiblePullRequests = pullRequests.Where(pullRequest => pullRequest.NeedsMyReview).Take(5)
             .Concat(pullRequests.Where(pullRequest => pullRequest.IsMine).Take(3))
@@ -182,7 +186,10 @@ public sealed class GitHubActionsClient : IIntegrationClient
             count += threads.GetProperty("nodes").EnumerateArray()
                 .Count(thread => !thread.GetProperty("isResolved").GetBoolean());
             var pageInfo = threads.GetProperty("pageInfo");
-            if (!pageInfo.GetProperty("hasNextPage").GetBoolean()) break;
+            if (!pageInfo.GetProperty("hasNextPage").GetBoolean())
+            {
+                break;
+            }
             after = pageInfo.GetProperty("endCursor").GetString()
                 ?? throw new InvalidOperationException("GitHub did not return a cursor for the next review-thread page.");
         } while (true);
@@ -217,7 +224,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
         try
         {
             if (_rateLimitUntil > DateTimeOffset.UtcNow)
-                throw CreateRateLimitException(_rateLimitUntil);
+            {
+                    throw CreateRateLimitException(_rateLimitUntil);
+            }
 
             var response = await _http.SendAsync(request, ct);
             var responseText = (int)response.StatusCode == 429 ||
@@ -256,9 +265,18 @@ public sealed class GitHubActionsClient : IIntegrationClient
 
     private static bool IsRateLimited(HttpResponseMessage response, string? responseText)
     {
-        if ((int)response.StatusCode == 429) return true;
-        if (response.StatusCode != System.Net.HttpStatusCode.Forbidden) return false;
-        if (response.Headers.RetryAfter != null) return true;
+        if ((int)response.StatusCode == 429)
+        {
+            return true;
+        }
+        if (response.StatusCode != System.Net.HttpStatusCode.Forbidden)
+        {
+            return false;
+        }
+        if (response.Headers.RetryAfter != null)
+        {
+            return true;
+        }
         if (response.Headers.TryGetValues("X-RateLimit-Remaining", out var remaining) &&
             remaining.FirstOrDefault() == "0")
             return true;
@@ -275,9 +293,13 @@ public sealed class GitHubActionsClient : IIntegrationClient
         var now = DateTimeOffset.UtcNow;
         DateTimeOffset? retryAt = null;
         if (response.Headers.RetryAfter?.Delta is { } retryDelay)
-            retryAt = now + retryDelay;
+        {
+                retryAt = now + retryDelay;
+        }
         else if (response.Headers.RetryAfter?.Date is { } retryDate)
-            retryAt = retryDate;
+        {
+                retryAt = retryDate;
+        }
         else if (response.Headers.TryGetValues("X-RateLimit-Reset", out var resetValues) &&
             long.TryParse(resetValues.FirstOrDefault(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds))
             retryAt = DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
@@ -291,7 +313,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
         {
             using var document = JsonDocument.Parse(responseText);
             if (document.RootElement.TryGetProperty("message", out var message))
-                return message.GetString() ?? "";
+            {
+                    return message.GetString() ?? "";
+            }
         }
         catch (JsonException)
         {
@@ -351,7 +375,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
         if (Uri.TryCreate(input, UriKind.Absolute, out var uri))
         {
             if (!uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
-                throw new FormatException($"'{value}' is not a github.com repository URL.");
+            {
+                    throw new FormatException($"'{value}' is not a github.com repository URL.");
+            }
             input = uri.AbsolutePath.Trim('/');
         }
         else if (input.StartsWith("github.com/", StringComparison.OrdinalIgnoreCase))
@@ -362,7 +388,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
         input = input.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? input[..^4] : input;
         var parts = input.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (parts.Length != 2 || parts.Any(part => part is "." or ".."))
-            throw new FormatException($"Use 'owner/repository' or a GitHub repository URL: '{value}'.");
+        {
+                throw new FormatException($"Use 'owner/repository' or a GitHub repository URL: '{value}'.");
+        }
         return (parts[0], parts[1]);
     }
 
