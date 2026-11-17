@@ -175,7 +175,7 @@ public sealed class PipelineConfigurationControl : UserControl
         var root = new Grid();
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var scroll = new ScrollViewer { Content = list };
+        var scroll = new ScrollViewer { Content = list }.WithWheelFallback();
         Grid.SetRow(buttons, 1);
         root.Children.Add(scroll);
         root.Children.Add(buttons);

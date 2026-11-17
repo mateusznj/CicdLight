@@ -18,11 +18,11 @@ public sealed class SettingsWindow : Window
     private readonly StackPanel _pipelineHubPage = new() { Spacing = 8, Padding = new Thickness(20) };
     private readonly StackPanel _aboutPage = new() { Spacing = 12, Padding = new Thickness(20) };
     private readonly Grid _pageHost = new();
-    private readonly ScrollViewer _connectionsScroll = new();
-    private readonly ScrollViewer _generalScroll = new() { Visibility = Visibility.Collapsed };
-    private readonly ScrollViewer _pipelineScroll = new() { Visibility = Visibility.Collapsed };
-    private readonly ScrollViewer _pipelineHubScroll = new() { Visibility = Visibility.Collapsed };
-    private readonly ScrollViewer _aboutScroll = new() { Visibility = Visibility.Collapsed };
+    private readonly ScrollViewer _connectionsScroll = new ScrollViewer().WithWheelFallback();
+    private readonly ScrollViewer _generalScroll = new ScrollViewer { Visibility = Visibility.Collapsed }.WithWheelFallback();
+    private readonly ScrollViewer _pipelineScroll = new ScrollViewer { Visibility = Visibility.Collapsed }.WithWheelFallback();
+    private readonly ScrollViewer _pipelineHubScroll = new ScrollViewer { Visibility = Visibility.Collapsed }.WithWheelFallback();
+    private readonly ScrollViewer _aboutScroll = new ScrollViewer { Visibility = Visibility.Collapsed }.WithWheelFallback();
     private StackPanel? _settingsFooter;
     private readonly NumberBox _poll = new() { Minimum = 15, Maximum = 3600, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = 15, MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };

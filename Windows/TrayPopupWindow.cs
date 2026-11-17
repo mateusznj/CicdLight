@@ -78,7 +78,7 @@ public sealed class TrayPopupWindow : Window
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         root.Children.Add(header);
-        var scroll = new ScrollViewer { Content = _list };
+        var scroll = new ScrollViewer { Content = _list }.WithWheelFallback();
         Grid.SetRow(scroll, 1);
         root.Children.Add(scroll);
         Content = root;
