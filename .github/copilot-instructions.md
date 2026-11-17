@@ -19,6 +19,7 @@
 ## Commity
 - Format Conventional Commits, małe litery, bez kropki: `feat: ...`, `fix: ...`, `docs: ...`, `refactor: ...`.
 - Jeden logiczny temat na commit.
+- Nie dodawaj trailera `Co-authored-by: Copilot` ani innych współautorów do komunikatów commitów.
 
 ## Kodowanie plików
 - Wszystkie pliki (`.cs`, `.resx`, `.md`) w UTF-8 bez BOM.
