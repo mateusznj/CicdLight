@@ -57,15 +57,21 @@ public sealed class AzureDevOpsClient : IIntegrationClient
     {
         foreach (var name in new[] { "finishTime", "startTime", "queueTime" })
         {
-            if (b.TryGetProperty(name, out var p) && p.ValueKind == System.Text.Json.JsonValueKind.String
-                && DateTimeOffset.TryParse(p.GetString(), out var t))
+            var time = ParseTimeProperty(b, name);
+            if (time.HasValue)
             {
-                return t;
+                return time;
             }
         }
 
         return null;
     }
+
+    private static DateTimeOffset? ParseTimeProperty(System.Text.Json.JsonElement b, string name) =>
+        b.TryGetProperty(name, out var p) && p.ValueKind == System.Text.Json.JsonValueKind.String
+        && DateTimeOffset.TryParse(p.GetString(), out var t)
+            ? t
+            : null;
 
     // Latest build per definition+branch, newest first.
     private async Task<List<BuildInfo>> GetBuildsAsync(string project, CancellationToken ct)
@@ -78,7 +84,7 @@ public sealed class AzureDevOpsClient : IIntegrationClient
         }
 
         var json = await GetAsync(url, ct);
-        return json.GetProperty("value").EnumerateArray()
+        var builds = json.GetProperty("value").EnumerateArray()
             .Select(b => new BuildInfo(
                 b.GetProperty("id").GetInt32(),
                 project,
@@ -89,7 +95,11 @@ public sealed class AzureDevOpsClient : IIntegrationClient
                 b.TryGetProperty("result", out var r) ? r.GetString() : null,
                 b.TryGetProperty("requestedFor", out var rf) ? rf.GetProperty("displayName").GetString() ?? "" : "",
                 b.GetProperty("_links").GetProperty("web").GetProperty("href").GetString() ?? "",
-                ParseTime(b), _connection.Id))
+                ParseTime(b), _connection.Id,
+                ParseTimeProperty(b, "startTime"), ParseTimeProperty(b, "finishTime")))
+            .ToList();
+
+        return BuildEtaEstimator.Annotate(builds)
             .GroupBy(b => b.Key)
             .Select(g => g.First())
             .ToList();

@@ -202,8 +202,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
         var fullRepository = $"{owner}/{repository}";
         var url = $"https://api.github.com/repos/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repository)}/actions/runs?per_page=100";
         var json = await GetJsonAsync(url, ct);
-        return json.GetProperty("workflow_runs").EnumerateArray()
+        return BuildEtaEstimator.Annotate(json.GetProperty("workflow_runs").EnumerateArray()
             .Select(run => ToBuild(fullRepository, run))
+            .ToList())
             .GroupBy(build => build.Key, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.OrderByDescending(build => build.Time ?? DateTimeOffset.MinValue).First())
             .ToList();
@@ -354,6 +355,10 @@ public sealed class GitHubActionsClient : IIntegrationClient
         var time = run.TryGetProperty("updated_at", out var updatedAt) && DateTimeOffset.TryParse(updatedAt.GetString(), out var parsedTime)
             ? parsedTime
             : (DateTimeOffset?)null;
+        var startTime = run.TryGetProperty("run_started_at", out var startedAt) && DateTimeOffset.TryParse(startedAt.GetString(), out var parsedStart)
+            ? parsedStart
+            : (DateTimeOffset?)null;
+        var finishTime = status == "completed" ? time : null;
 
         return new BuildInfo(
             run.GetProperty("run_number").GetInt32(),
@@ -366,7 +371,9 @@ public sealed class GitHubActionsClient : IIntegrationClient
             actor,
             run.GetProperty("html_url").GetString() ?? $"https://github.com/{repository}/actions",
             time,
-            _connection.Id);
+            _connection.Id,
+            startTime,
+            finishTime);
     }
 
     private static (string Owner, string Repository) ParseRepository(string value)
