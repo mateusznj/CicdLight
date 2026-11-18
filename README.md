@@ -45,6 +45,8 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 - **GitHub pull requests:** otwarte PR-y przypisane do zalogowanego użytkownika jako autora lub osoby proszonej o review. Wymagany jest token GitHub, aby rozpoznać bieżącego użytkownika; do repozytoriów prywatnych token jest wymagany również do odczytu PR-ów.
 - **Aktualizacje:** ręczne sprawdzenie najnowszego stabilnego wydania GitHub i otwarcie strony wydania; aplikacja nie pobiera ani nie instaluje aktualizacji automatycznie.
 - **Powiadomienia systemowe:** globalny wyłącznik oraz ustawienia per projekt dla nieudanych i naprawionych buildów, nowych próśb o review oraz nierozwiązanych komentarzy w PR-ach. Testowy przycisk w **Ustawienia → Ogólne** pozwala sprawdzić powiadomienia Windows.
+- **Alerty o komentarzach w PR-ach:** w **Ustawienia → Ogólne** osobno włączasz alert (żółta ikona i toasty) dla nierozwiązanych komentarzy w Twoich PR-ach (domyślnie włączone) i w pozostałych PR-ach (domyślnie wyłączone). Tooltip ikony pokazuje osobne liczniki „moje” i „inne”.
+- **ETA buildów:** dla trwających buildów popup pokazuje szacowany czas do końca (mediana ostatnich udanych uruchomień tego samego pipeline'u, preferowany ten sam branch; minimum 3 próbki), a tooltip wiersza szczegóły. Funkcję można wyłączyć w **Ustawienia → Ogólne**.
 - **Ochrona tokenu PAT:** szyfrowanie DPAPI (`CurrentUser`); ustawienia zapisane w `%APPDATA%\CicdLight\settings.json`.
 - **Integracja z Windows:** opcjonalny autostart oraz uruchamianie tylko jednej instancji.
 
@@ -113,6 +115,8 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 - **GitHub pull requests:** open PRs authored by the authenticated user or requesting their review. A GitHub token is required to identify the current user; private repositories also require a token to read PRs.
 - **Updates:** manually checks the latest stable GitHub release and opens its release page; the app does not download or install updates automatically.
 - **System notifications:** a global switch and per-project options for failed and recovered builds, new review requests, and unresolved PR comments. Use the test button in **Settings → General** to verify Windows notifications.
+- **PR comment alerts:** in **Settings → General** you choose separately whether unresolved comments turn the tray icon yellow and raise toasts for your own PRs (on by default) and for other PRs (off by default). The tray tooltip lists "mine" and "other" counts separately.
+- **Build ETA:** running builds show the estimated time left in the popup (median of recent successful runs of the same pipeline, preferring the same branch; at least 3 samples), with details in the row tooltip. It can be turned off in **Settings → General**.
 - **PAT protection:** Windows DPAPI encryption (`CurrentUser`); settings stored in `%APPDATA%\CicdLight\settings.json`.
 - **Windows integration:** optional startup with Windows and single-instance execution.
 

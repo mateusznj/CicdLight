@@ -1,6 +1,6 @@
 # Plan: ETA buildów i konfigurowalny sygnał PR-ów w zasobniku
 
-Status: plan do implementacji. Zakres: CicdLight (Azure DevOps i GitHub).
+Status: zrealizowane (zadania 1 i 2). Odstępstwo: historia czasów nie jest trzymana między pollami, bo każdy poll pobiera do 100 ostatnich buildów, z których liczona jest mediana. Zakres: CicdLight (Azure DevOps i GitHub).
 
 ## Ustalenia z kodu
 

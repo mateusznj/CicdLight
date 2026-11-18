@@ -21,7 +21,7 @@ Dokument jest roboczym planem porównującym obecne możliwości CicdLight z fun
 | Osobisty pulpit i lista zadań | Popup z buildami, wydaniami i wybranymi kategoriami PR-ów | Brak jednej posortowanej listy wszystkich działań, filtrów i własnych reguł priorytetu |
 | Lista obserwowanych | Wybór pipeline'ów i wydań | Brak śledzenia konkretnych PR-ów, issues i work items oraz zmian ich stanu |
 | Historia pipeline'ów | Wyświetlane są najnowsze wyniki | Brak osobnej historii dla branchy, pierwszego błędnego builda i kontekstu poprzednich zmian |
-| Szacowany czas builda | Brak | Brak estymacji czasu zakończenia i danych historycznych do jej obliczenia |
+| Szacowany czas builda | Czas do końca trwających buildów w popupie (mediana ostatnich udanych uruchomień) | Brak estymacji dla branchy bez historii i trwałej historii między sesjami |
 | Potwierdzanie alertów | Brak | Nie można oznaczyć alertu jako zauważonego ani odłożyć go na później |
 | Powiadomienia buildów | Błędy i naprawy | Brak pełnego zestawu zdarzeń, np. startu i każdego zakończenia, oraz filtrów po branchu |
 | Powiadomienia wydań | Wydania są widoczne w popupie | Brak powiadomień o sukcesie, błędzie i oczekujących akceptacjach |
@@ -100,10 +100,10 @@ Dokument jest roboczym planem porównującym obecne możliwości CicdLight z fun
 
 ### Etap 5 - estymacja czasu
 
-- [ ] Zbierać czasy rozpoczęcia i zakończenia buildów.
-- [ ] Obliczać estymację per pipeline, opcjonalnie per branch, na podstawie mediany ostatnich udanych buildów.
-- [ ] Nie pokazywać estymacji, gdy brakuje minimalnej liczby próbek.
-- [ ] Pokazać, że jest to szacunek, a nie gwarantowany czas ukończenia.
+- [x] Zbierać czasy rozpoczęcia i zakończenia buildów.
+- [x] Obliczać estymację per pipeline, opcjonalnie per branch, na podstawie mediany ostatnich udanych buildów.
+- [x] Nie pokazywać estymacji, gdy brakuje minimalnej liczby próbek.
+- [x] Pokazać, że jest to szacunek, a nie gwarantowany czas ukończenia (prefiks „~”, „dłużej niż zwykle”).
 
 ### Etap 6 - GitHub Issues i Azure Boards
 
