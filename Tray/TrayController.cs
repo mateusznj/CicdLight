@@ -150,7 +150,10 @@ public sealed class TrayController : IDisposable
                 errors == 0 ? null : Strings.Format("Tray_ConnectionErrors", errors),
                 results.SelectMany(result => result.Connection.HasSelection
                     ? result.Snapshot.Releases.Where(release => result.Connection.SelectedItems.Contains(release.Key))
-                    : result.Snapshot.Releases).ToList());
+                    : result.Snapshot.Releases).ToList(),
+                null,
+                _settings.TrayAlertMyPrComments,
+                _settings.TrayAlertOtherPrComments);
             _settingsWindow?.RefreshConnectionStatuses();
             Notify(_snapshot);
             Update();
@@ -233,6 +236,7 @@ public sealed class TrayController : IDisposable
 
             foreach (var p in s.PullRequests.Where(p =>
                          p.UnresolvedCommentCount > _previousUnresolvedComments.GetValueOrDefault(p.Key) &&
+                         (p.IsMine ? s.AlertMyPrComments : s.AlertOtherPrComments) &&
                          GetProjectNotifications(p.Project).UnresolvedComments))
                 Toast(Strings.Get("Toast_UnresolvedComment"),
                     Strings.Format("Toast_UnresolvedCommentText", p.Id, p.Title, p.UnresolvedCommentCount),
@@ -274,7 +278,7 @@ public sealed class TrayController : IDisposable
         var reviews = _snapshot.PullRequests.Count(p => p.NeedsMyReview);
         var text = _snapshot.Error != null
             ? Strings.Format("Tooltip_Error", _snapshot.Error)
-            : Strings.Format("Tooltip_Summary", failed, reviews, _snapshot.PullRequestsToRevise);
+            : Strings.Format("Tooltip_Summary", failed, reviews, _snapshot.MyPullRequestsToRevise, _snapshot.OtherPullRequestsToRevise);
         _tray.ToolTipText = text.Length > 127 ? text[..127] : text;
         if (_popup.IsVisible)
         {

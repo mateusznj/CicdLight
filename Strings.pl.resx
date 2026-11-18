@@ -9,7 +9,7 @@
   <data name="Tray_ConnectionErrors" xml:space="preserve"><value>{0} połączeń wymaga uwagi. Szczegóły znajdziesz w Ustawieniach.</value></data>
   <data name="Tray_ConnectionErrorShort" xml:space="preserve"><value>Problem z połączeniem. Szczegóły w Ustawieniach.</value></data>
   <data name="Status_Summary" xml:space="preserve"><value>Błędne: {0}, do review: {1}, PR-y do rewizji: {2}</value></data>
-  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: błędne {0}, do review {1}, PR-y do rewizji {2}</value></data>
+  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: błędne {0}, do review {1}, PR-y do rewizji: moje {2}, inne {3}</value></data>
   <data name="Tooltip_Error" xml:space="preserve"><value>CicdLight: {0}</value></data>
   <data name="Toast_BuildFailed" xml:space="preserve"><value>Build zakończony błędem: {0}</value></data>
   <data name="Toast_BuildFailedText" xml:space="preserve"><value>{0} #{1} ({2})</value></data>
@@ -110,6 +110,8 @@
   <data name="Settings_TestNotification" xml:space="preserve"><value>Wyślij powiadomienie testowe</value></data>
   <data name="Settings_NotifyUnresolvedComments" xml:space="preserve"><value>Nierozwiązane komentarze</value></data>
   <data name="Settings_Mine" xml:space="preserve"><value>Tylko buildy uruchomione przeze mnie</value></data>
+  <data name="Settings_TrayAlertMyPrs" xml:space="preserve"><value>Alertuj o nierozwiązanych komentarzach w moich PR-ach</value></data>
+  <data name="Settings_TrayAlertOtherPrs" xml:space="preserve"><value>Alertuj o nierozwiązanych komentarzach w pozostałych PR-ach</value></data>
   <data name="Settings_Startup" xml:space="preserve"><value>Uruchamiaj z Windows</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Język (dotyczy nowo otwieranych okien)</value></data>
   <data name="Language_System" xml:space="preserve"><value>Domyślny systemowy</value></data>

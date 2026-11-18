@@ -5,10 +5,17 @@ public record Snapshot(
     IReadOnlyList<PullRequestInfo> PullRequests,
     string? Error,
     IReadOnlyList<ReleaseInfo>? ReleaseList = null,
-    IReadOnlyList<string>? ProjectList = null)
+    IReadOnlyList<string>? ProjectList = null,
+    bool AlertMyPrComments = true,
+    bool AlertOtherPrComments = false)
 {
     public IReadOnlyList<ReleaseInfo> Releases => ReleaseList ?? [];
-    public int PullRequestsToRevise => PullRequests.Count(p => p.HasUnresolvedComments);
+    public int MyPullRequestsToRevise => PullRequests.Count(p => p.IsMine && p.HasUnresolvedComments);
+    public int OtherPullRequestsToRevise => PullRequests.Count(p => !p.IsMine && p.HasUnresolvedComments);
+
+    // Only the PR groups the user chose to be alerted about.
+    public int PullRequestsToRevise =>
+        (AlertMyPrComments ? MyPullRequestsToRevise : 0) + (AlertOtherPrComments ? OtherPullRequestsToRevise : 0);
 
     public static Snapshot Empty(string? error = null) => new([], [], error);
 
@@ -23,6 +30,6 @@ public record Snapshot(
         Error != null ? Health.Unknown :
         Builds.Any(b => b.IsFailed && !b.IsRunning) || Releases.Any(r => r.IsFailed && !r.IsRunning) ? Health.Failed :
         Builds.Any(b => b.IsRunning) || Releases.Any(r => r.IsRunning) ? Health.Running :
-        PullRequests.Any(p => p.NeedsMyReview || p.HasUnresolvedComments) ? Health.Warning :
+        PullRequests.Any(p => p.NeedsMyReview) || PullRequestsToRevise > 0 ? Health.Warning :
         Health.Ok;
 }

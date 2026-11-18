@@ -27,6 +27,8 @@ public sealed class SettingsWindow : Window
     private readonly NumberBox _poll = new() { Minimum = 15, Maximum = 3600, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = 15, MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };
     private readonly CheckBox _mine = new() { Content = Strings.Get("Settings_Mine") };
+    private readonly CheckBox _alertMyPrs = new() { Content = Strings.Get("Settings_TrayAlertMyPrs") };
+    private readonly CheckBox _alertOtherPrs = new() { Content = Strings.Get("Settings_TrayAlertOtherPrs") };
     private readonly CheckBox _startup = new() { Content = Strings.Get("Settings_Startup") };
     private readonly ComboBox _language = new() { MinWidth = 200, Items = { Strings.Get("Language_System"), "English", "Polski" } };
     private AppSettings _s;
@@ -55,6 +57,8 @@ public sealed class SettingsWindow : Window
         _poll.Value = Math.Clamp(settings.PollSeconds, 15, 3600);
         _notify.IsChecked = settings.Notifications;
         _mine.IsChecked = settings.OnlyMyBuilds;
+        _alertMyPrs.IsChecked = settings.TrayAlertMyPrComments;
+        _alertOtherPrs.IsChecked = settings.TrayAlertOtherPrComments;
         _startup.IsChecked = settings.StartWithWindows;
         _language.SelectedIndex = settings.Language switch { "en" => 1, "pl" => 2, _ => 0 };
         var save = new Button { Content = Strings.Get("Button_Save"), Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
@@ -77,6 +81,8 @@ public sealed class SettingsWindow : Window
         testNotificationButton.Click += (_, _) => _testNotification();
         _generalPage.Children.Add(testNotificationButton);
         _generalPage.Children.Add(_mine);
+        _generalPage.Children.Add(_alertMyPrs);
+        _generalPage.Children.Add(_alertOtherPrs);
         _generalPage.Children.Add(_startup);
         _aboutPage.Children.Add(new TextBlock
         {
@@ -536,6 +542,8 @@ public sealed class SettingsWindow : Window
         _s.PollSeconds = double.IsNaN(_poll.Value) ? 60 : (int)Math.Clamp(_poll.Value, 15, 3600);
         _s.Notifications = _notify.IsChecked == true;
         _s.OnlyMyBuilds = _mine.IsChecked == true;
+        _s.TrayAlertMyPrComments = _alertMyPrs.IsChecked == true;
+        _s.TrayAlertOtherPrComments = _alertOtherPrs.IsChecked == true;
         _s.StartWithWindows = _startup.IsChecked == true;
         _s.Language = _language.SelectedIndex switch { 1 => "en", 2 => "pl", _ => "" };
         _s.Save();

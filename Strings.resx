@@ -9,7 +9,7 @@
   <data name="Tray_ConnectionErrors" xml:space="preserve"><value>{0} connection(s) need attention. Open Settings for details.</value></data>
   <data name="Tray_ConnectionErrorShort" xml:space="preserve"><value>Connection issue. Open Settings for details.</value></data>
   <data name="Status_Summary" xml:space="preserve"><value>{0} failed, {1} to review, {2} PRs to revise</value></data>
-  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: {0} failed, {1} to review, {2} PRs to revise</value></data>
+  <data name="Tooltip_Summary" xml:space="preserve"><value>CicdLight: {0} failed, {1} to review, PRs to revise: {2} mine, {3} other</value></data>
   <data name="Tooltip_Error" xml:space="preserve"><value>CicdLight: {0}</value></data>
   <data name="Toast_BuildFailed" xml:space="preserve"><value>Build failed: {0}</value></data>
   <data name="Toast_BuildFailedText" xml:space="preserve"><value>{0} #{1} ({2})</value></data>
@@ -110,6 +110,8 @@
   <data name="Settings_TestNotification" xml:space="preserve"><value>Send test notification</value></data>
   <data name="Settings_NotifyUnresolvedComments" xml:space="preserve"><value>Unresolved comments</value></data>
   <data name="Settings_Mine" xml:space="preserve"><value>Only builds requested by me</value></data>
+  <data name="Settings_TrayAlertMyPrs" xml:space="preserve"><value>Alert on unresolved comments in my pull requests</value></data>
+  <data name="Settings_TrayAlertOtherPrs" xml:space="preserve"><value>Alert on unresolved comments in other pull requests</value></data>
   <data name="Settings_Startup" xml:space="preserve"><value>Start with Windows</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Language (applies after restart of windows)</value></data>
   <data name="Language_System" xml:space="preserve"><value>System default</value></data>
