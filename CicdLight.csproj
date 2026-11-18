@@ -24,6 +24,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+  <Compile Remove="CicdLight.Tests\**" />
+  <None Remove="CicdLight.Tests\**" />
+  <EmbeddedResource Remove="CicdLight.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
   <None Include=".github\copilot-instructions.md" />
   <None Include=".github\csharp-coding-style.instructions.md" />
   <None Include=".github\localization.instructions.md" />
