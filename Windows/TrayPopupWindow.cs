@@ -143,7 +143,9 @@ public sealed class TrayPopupWindow : Window
         AddHeader(Strings.Get("Section_Pipelines"), builds.Count == 0 ? null : Strings.Format("Section_Latest", builds.Count));
         foreach (var b in builds)
         {
-                AddRow(BuildGlyph(b), b.Definition, $"{b.Branch} · {b.RequestedFor}", Ago(b.Time), b.Url, $"{b.Project} #{b.BuildNumber}");
+            var timeText = s.ShowBuildEta ? BuildEtaText(b) : null;
+            AddRow(BuildGlyph(b), b.Definition, $"{b.Branch} · {b.RequestedFor}", timeText ?? Ago(b.Time), b.Url,
+                s.ShowBuildEta ? BuildTooltip(b) : $"{b.Project} #{b.BuildNumber}");
         }
 
         var releases = s.Releases.OrderByDescending(r => r.IsFailed).ThenByDescending(r => r.IsRunning).Take(3).ToList();
@@ -326,6 +328,50 @@ public sealed class TrayPopupWindow : Window
 
     private static AppIcon BuildGlyph(BuildInfo b) =>
         b.IsRunning ? AppIcon.Running : b.IsFailed ? AppIcon.Failed : b.IsSucceeded ? AppIcon.Ok : AppIcon.Other;
+
+    private static string? BuildEtaText(BuildInfo build)
+    {
+        var now = DateTimeOffset.Now;
+        if (build.Elapsed(now) is not { } elapsed)
+        {
+            return null;
+        }
+
+        if (build.Remaining(now) is not { } remaining)
+        {
+            return Strings.Format("Eta_Running", FormatSpan(elapsed));
+        }
+
+        if (remaining <= TimeSpan.Zero)
+        {
+            return Strings.Get("Eta_Overdue");
+        }
+
+        return remaining < TimeSpan.FromMinutes(1)
+            ? Strings.Get("Eta_LessThanMinute")
+            : Strings.Format("Eta_Left", FormatSpan(remaining));
+    }
+
+    private static string BuildTooltip(BuildInfo build)
+    {
+        var title = $"{build.Project} #{build.BuildNumber}";
+        if (!build.IsRunning || build.StartTime == null)
+        {
+            return title;
+        }
+
+        return build.TypicalDuration is { } typical
+            ? Strings.Format("Eta_Tooltip", title, Ago(build.StartTime), FormatSpan(typical), build.DurationSamples)
+            : Strings.Format("Eta_TooltipNoHistory", title, Ago(build.StartTime));
+    }
+
+    private static string FormatSpan(TimeSpan span)
+    {
+        var minutes = Math.Max(1, (int)Math.Round(span.TotalMinutes));
+        return minutes < 60
+            ? Strings.Format("Duration_Min", minutes)
+            : Strings.Format("Duration_HourMin", minutes / 60, minutes % 60);
+    }
 
     private static string Ago(DateTimeOffset? t)
     {

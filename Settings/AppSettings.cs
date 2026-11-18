@@ -22,6 +22,7 @@ public class AppSettings
     public bool NotifyReviewRequested { get; set; } = true;
     public bool TrayAlertMyPrComments { get; set; } = true;
     public bool TrayAlertOtherPrComments { get; set; } = false;
+    public bool ShowBuildEta { get; set; } = true;
     public bool OnlyMyBuilds { get; set; } = false;
     public bool StartWithWindows { get; set; } = false;
     public string Language { get; set; } = "";                 // "" = system, "en", "pl"

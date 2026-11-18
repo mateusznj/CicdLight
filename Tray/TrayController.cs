@@ -153,7 +153,8 @@ public sealed class TrayController : IDisposable
                     : result.Snapshot.Releases).ToList(),
                 null,
                 _settings.TrayAlertMyPrComments,
-                _settings.TrayAlertOtherPrComments);
+                _settings.TrayAlertOtherPrComments,
+                _settings.ShowBuildEta);
             _settingsWindow?.RefreshConnectionStatuses();
             Notify(_snapshot);
             Update();

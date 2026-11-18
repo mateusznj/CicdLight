@@ -112,6 +112,15 @@
   <data name="Settings_Mine" xml:space="preserve"><value>Only builds requested by me</value></data>
   <data name="Settings_TrayAlertMyPrs" xml:space="preserve"><value>Alert on unresolved comments in my pull requests</value></data>
   <data name="Settings_TrayAlertOtherPrs" xml:space="preserve"><value>Alert on unresolved comments in other pull requests</value></data>
+  <data name="Settings_ShowBuildEta" xml:space="preserve"><value>Show estimated time left for running builds</value></data>
+  <data name="Duration_Min" xml:space="preserve"><value>{0} min</value></data>
+  <data name="Duration_HourMin" xml:space="preserve"><value>{0} h {1} min</value></data>
+  <data name="Eta_Left" xml:space="preserve"><value>~{0} left</value></data>
+  <data name="Eta_LessThanMinute" xml:space="preserve"><value>&lt;1 min left</value></data>
+  <data name="Eta_Overdue" xml:space="preserve"><value>overdue</value></data>
+  <data name="Eta_Running" xml:space="preserve"><value>running {0}</value></data>
+  <data name="Eta_Tooltip" xml:space="preserve"><value>{0}: started {1}, typical duration {2} ({3} runs)</value></data>
+  <data name="Eta_TooltipNoHistory" xml:space="preserve"><value>{0}: started {1}, not enough history for an estimate</value></data>
   <data name="Settings_Startup" xml:space="preserve"><value>Start with Windows</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Language (applies after restart of windows)</value></data>
   <data name="Language_System" xml:space="preserve"><value>System default</value></data>

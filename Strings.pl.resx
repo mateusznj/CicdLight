@@ -112,6 +112,15 @@
   <data name="Settings_Mine" xml:space="preserve"><value>Tylko buildy uruchomione przeze mnie</value></data>
   <data name="Settings_TrayAlertMyPrs" xml:space="preserve"><value>Alertuj o nierozwiązanych komentarzach w moich PR-ach</value></data>
   <data name="Settings_TrayAlertOtherPrs" xml:space="preserve"><value>Alertuj o nierozwiązanych komentarzach w pozostałych PR-ach</value></data>
+  <data name="Settings_ShowBuildEta" xml:space="preserve"><value>Pokazuj szacowany czas do końca trwających buildów</value></data>
+  <data name="Duration_Min" xml:space="preserve"><value>{0} min</value></data>
+  <data name="Duration_HourMin" xml:space="preserve"><value>{0} godz. {1} min</value></data>
+  <data name="Eta_Left" xml:space="preserve"><value>~{0} do końca</value></data>
+  <data name="Eta_LessThanMinute" xml:space="preserve"><value>&lt;1 min do końca</value></data>
+  <data name="Eta_Overdue" xml:space="preserve"><value>dłużej niż zwykle</value></data>
+  <data name="Eta_Running" xml:space="preserve"><value>trwa {0}</value></data>
+  <data name="Eta_Tooltip" xml:space="preserve"><value>{0}: start {1}, typowy czas {2} ({3} uruchomień)</value></data>
+  <data name="Eta_TooltipNoHistory" xml:space="preserve"><value>{0}: start {1}, za mało historii do oszacowania</value></data>
   <data name="Settings_Startup" xml:space="preserve"><value>Uruchamiaj z Windows</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Język (dotyczy nowo otwieranych okien)</value></data>
   <data name="Language_System" xml:space="preserve"><value>Domyślny systemowy</value></data>

@@ -28,6 +28,7 @@ public sealed class SettingsWindow : Window
     private readonly CheckBox _notify = new() { Content = Strings.Get("Settings_Notify") };
     private readonly CheckBox _mine = new() { Content = Strings.Get("Settings_Mine") };
     private readonly CheckBox _alertMyPrs = new() { Content = Strings.Get("Settings_TrayAlertMyPrs") };
+    private readonly CheckBox _showEta = new() { Content = Strings.Get("Settings_ShowBuildEta") };
     private readonly CheckBox _alertOtherPrs = new() { Content = Strings.Get("Settings_TrayAlertOtherPrs") };
     private readonly CheckBox _startup = new() { Content = Strings.Get("Settings_Startup") };
     private readonly ComboBox _language = new() { MinWidth = 200, Items = { Strings.Get("Language_System"), "English", "Polski" } };
@@ -58,6 +59,7 @@ public sealed class SettingsWindow : Window
         _notify.IsChecked = settings.Notifications;
         _mine.IsChecked = settings.OnlyMyBuilds;
         _alertMyPrs.IsChecked = settings.TrayAlertMyPrComments;
+        _showEta.IsChecked = settings.ShowBuildEta;
         _alertOtherPrs.IsChecked = settings.TrayAlertOtherPrComments;
         _startup.IsChecked = settings.StartWithWindows;
         _language.SelectedIndex = settings.Language switch { "en" => 1, "pl" => 2, _ => 0 };
@@ -83,6 +85,7 @@ public sealed class SettingsWindow : Window
         _generalPage.Children.Add(_mine);
         _generalPage.Children.Add(_alertMyPrs);
         _generalPage.Children.Add(_alertOtherPrs);
+        _generalPage.Children.Add(_showEta);
         _generalPage.Children.Add(_startup);
         _aboutPage.Children.Add(new TextBlock
         {
@@ -544,6 +547,7 @@ public sealed class SettingsWindow : Window
         _s.OnlyMyBuilds = _mine.IsChecked == true;
         _s.TrayAlertMyPrComments = _alertMyPrs.IsChecked == true;
         _s.TrayAlertOtherPrComments = _alertOtherPrs.IsChecked == true;
+        _s.ShowBuildEta = _showEta.IsChecked == true;
         _s.StartWithWindows = _startup.IsChecked == true;
         _s.Language = _language.SelectedIndex switch { 1 => "en", 2 => "pl", _ => "" };
         _s.Save();
