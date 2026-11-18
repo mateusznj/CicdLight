@@ -15,6 +15,7 @@
   <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   <Nullable>enable</Nullable>
   <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+  <ApplicationManifest>app.manifest</ApplicationManifest>
   <SatelliteResourceLanguages>en;pl</SatelliteResourceLanguages>
   <ImplicitUsings>enable</ImplicitUsings>
   <!-- Projekt czysto zarządzany: pomijamy wyszukiwanie narzędzi MSVC (workload C++ nie jest wymagany). -->
