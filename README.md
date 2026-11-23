@@ -11,12 +11,12 @@
   [🇵🇱 Polski](#-polski) · [🇬🇧 English](#-english) · [Pobierz / Download](https://github.com/mateusznj/CicdLight/releases/latest)
 
   <a href="https://github.com/mateusznj/CicdLight/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/mateusznj/CicdLight/build.yml?branch=main&label=build" alt="Build status" /></a>
-  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.1.1"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.1.1/total?label=downloads" alt="v1.1.1 release downloads" /></a>
+  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.2.0"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.2.0/total?label=downloads" alt="v1.2.0 release downloads" /></a>
   <a href="https://github.com/mateusznj/CicdLight/releases/latest"><img src="https://img.shields.io/github/v/release/mateusznj/CicdLight?label=version" alt="Latest release version" /></a>
 </div>
 
 <p align="center">
-  <img src="Assets/cicdlight-screenshot.png" alt="CicdLight app with Windows system tray icon - demo data" width="385" />
+  <img src="Assets/cicdlight-screenshot.png" alt="CicdLight app with Windows system tray icon - demo data" width="384" />
 </p>
 
 <p align="center"><sub>Podgląd zawiera dane demonstracyjne. / The screenshot uses demo data.</sub></p>
@@ -52,7 +52,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 
 ### Pobieranie i instalacja
 
-Nowości w wersji 1.1.1 opisano w [informacjach o wydaniu](RELEASE_NOTES_v1.1.1.md).
+Nowości w wersji 1.2.0 opisano w [informacjach o wydaniu](RELEASE_NOTES_v1.2.0.md).
 
 1. Przejdź do [najnowszego wydania (GitHub Releases)](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Pobierz odpowiedni instalator z sekcji **Assets** i uruchom go.
@@ -71,6 +71,8 @@ Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tok
 ```powershell
 dotnet run
 ```
+
+Aby uruchomić aplikację z fikcyjnymi danymi (np. do zrzutów ekranu, bez konfiguracji połączeń), ustaw `CICDLIGHT_DEMO=1`; w tym trybie popup otwiera się automatycznie po kilku sekundach.
 
 Publikacja samodzielnej wersji (unpackaged, self-contained):
 
@@ -122,7 +124,7 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 
 ### Download and installation
 
-See the [v1.1.1 release notes](RELEASE_NOTES_v1.1.1.md) for what's new.
+See the [v1.2.0 release notes](RELEASE_NOTES_v1.2.0.md) for what's new.
 
 1. Open the [latest GitHub Release](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Download the appropriate installer from **Assets** and run it.
@@ -141,6 +143,8 @@ For private repositories, use a fine-grained token with **Actions: Read** and **
 ```powershell
 dotnet run
 ```
+
+To run the app with fake data (e.g. for screenshots, without configuring connections), set `CICDLIGHT_DEMO=1`; in this mode the popup opens automatically after a few seconds.
 
 Publish a self-contained unpackaged build:
 
