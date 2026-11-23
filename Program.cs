@@ -9,7 +9,7 @@ public static class Program
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
 
-        using var mutex = new Mutex(true, @"Local\CicdLight.SingleInstance", out var isNew);
+        using var mutex = new Mutex(true, DemoIntegrationClient.IsEnabled ? @"Local\CicdLight.Demo" : @"Local\CicdLight.SingleInstance", out var isNew);
         if (!isNew)
         {
             return;

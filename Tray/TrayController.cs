@@ -60,10 +60,20 @@ public sealed class TrayController : IDisposable
 
         ApplySettings();
 
-        if (!_settings.IsConfigured)
+        if (DemoIntegrationClient.IsEnabled)
+        {
+            _ = ShowDemoPopupAsync();
+        }
+        else if (!_settings.IsConfigured)
         {
             ShowSettings();
         }
+    }
+
+    private async Task ShowDemoPopupAsync()
+    {
+        await Task.Delay(TimeSpan.FromSeconds(3));
+        _popup.Show(_snapshot);
     }
 
     private void ApplySettings()
@@ -79,7 +89,14 @@ public sealed class TrayController : IDisposable
             client.Client.Dispose();
         }
         _clients.Clear();
-        foreach (var connection in _settings.Connections.Where(connection => connection.Enabled))
+        if (DemoIntegrationClient.IsEnabled)
+        {
+            _clients.Add((new IntegrationConnection { Organization = "demo" }, new DemoIntegrationClient()));
+        }
+        var enabledConnections = DemoIntegrationClient.IsEnabled
+            ? Enumerable.Empty<IntegrationConnection>()
+            : _settings.Connections.Where(connection => connection.Enabled);
+        foreach (var connection in enabledConnections)
         {
             IIntegrationClient client = connection.Provider switch
             {
