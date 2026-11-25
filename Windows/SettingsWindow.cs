@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Reflection;
 using System.Text.Json;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -95,11 +94,11 @@ public sealed class SettingsWindow : Window
         });
         _aboutPage.Children.Add(new TextBlock
         {
-            Text = Strings.Format("About_CurrentVersion", GetCurrentVersion()),
+            Text = Strings.Format("About_CurrentVersion", UpdateChecker.GetCurrentVersion()),
             TextWrapping = TextWrapping.Wrap
         });
         var openRepository = new Button { Content = Strings.Get("About_OpenRepository") };
-        openRepository.Click += (_, _) => OpenUrl("https://github.com/mateusznj/CicdLight");
+        openRepository.Click += (_, _) => OpenUrl(_s.UpdateRepositoryUrl);
         _aboutPage.Children.Add(openRepository);
         _aboutPage.Children.Add(new TextBlock
         {
@@ -221,55 +220,18 @@ public sealed class SettingsWindow : Window
         }
     }
 
-    private static string GetCurrentVersion()
-    {
-        var value = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-            ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
-            ?? "0.0.0";
-        return ParseVersion(value)?.ToString() ?? value;
-    }
-
-    private static Version? ParseVersion(string value)
-    {
-        var normalized = value.Trim().TrimStart('v', 'V');
-        var suffix = normalized.IndexOfAny(['-', '+']);
-        if (suffix >= 0)
-        {
-            normalized = normalized[..suffix];
-        }
-        return Version.TryParse(normalized, out var version) ? version : null;
-    }
-
     private async Task CheckForUpdatesAsync(Button checkButton)
     {
         checkButton.IsEnabled = false;
         try
         {
-            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd($"CicdLight/{GetCurrentVersion()}");
-            client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-            using var response = await client.GetAsync("https://api.github.com/repos/mateusznj/CicdLight/releases/latest");
-            response.EnsureSuccessStatusCode();
-            await using var stream = await response.Content.ReadAsStreamAsync();
-            using var document = await JsonDocument.ParseAsync(stream);
-
-            var release = document.RootElement;
-            var tag = release.GetProperty("tag_name").GetString() ?? "";
-            var releaseUrl = release.GetProperty("html_url").GetString() ?? "https://github.com/mateusznj/CicdLight/releases";
-            var currentText = GetCurrentVersion();
-            var current = ParseVersion(currentText);
-            var latest = ParseVersion(tag);
-            if (current == null || latest == null)
-            {
-                    throw new InvalidOperationException(Strings.Get("Update_InvalidVersion"));
-            }
-
-            if (latest > current)
+            var result = await UpdateChecker.CheckAsync(_s, CancellationToken.None);
+            if (result.UpdateAvailable)
             {
                 var dialog = new ContentDialog
                 {
                     Title = Strings.Get("Update_AvailableTitle"),
-                    Content = Strings.Format("Update_AvailableText", currentText, tag),
+                    Content = Strings.Format("Update_AvailableText", result.CurrentVersion, result.LatestVersion),
                     PrimaryButtonText = Strings.Get("Update_OpenRelease"),
                     CloseButtonText = Strings.Get("Button_Cancel"),
                     DefaultButton = ContentDialogButton.Primary,
@@ -277,16 +239,31 @@ public sealed class SettingsWindow : Window
                 };
                 if (await dialog.ShowAsync() == ContentDialogResult.Primary)
                 {
-                    OpenUrl(releaseUrl);
+                    OpenUrl(result.ReleaseUrl);
                 }
             }
             else
             {
                 await ShowUpdateMessageAsync(Strings.Get("Update_CurrentTitle"),
-                    Strings.Format("Update_CurrentText", currentText, tag));
+                    Strings.Format("Update_CurrentText", result.CurrentVersion, result.LatestVersion));
             }
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
+        {
+            await ShowUpdateMessageAsync(Strings.Get("Update_ErrorTitle"),
+                Strings.Format("Update_ErrorText", ex.Message));
+        }
+        catch (TaskCanceledException ex)
+        {
+            await ShowUpdateMessageAsync(Strings.Get("Update_ErrorTitle"),
+                Strings.Format("Update_ErrorText", ex.Message));
+        }
+        catch (JsonException ex)
+        {
+            await ShowUpdateMessageAsync(Strings.Get("Update_ErrorTitle"),
+                Strings.Format("Update_ErrorText", ex.Message));
+        }
+        catch (InvalidOperationException ex)
         {
             await ShowUpdateMessageAsync(Strings.Get("Update_ErrorTitle"),
                 Strings.Format("Update_ErrorText", ex.Message));

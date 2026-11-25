@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
 using Microsoft.UI.Dispatching;
@@ -27,6 +28,7 @@ public sealed class TrayController : IDisposable
     private string? _notificationUrl;
     private bool _refreshing;
     private bool _refreshPending;
+    private bool _updateCheckInProgress;
     private SettingsWindow? _settingsWindow;
 
     public TrayController()
@@ -112,10 +114,63 @@ public sealed class TrayController : IDisposable
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(15, _settings.PollSeconds));
         _timer.Start();
         _ = RefreshAsync();
+        _ = CheckForUpdatesDailyAsync();
+    }
+
+    private async Task CheckForUpdatesDailyAsync()
+    {
+        if (_updateCheckInProgress)
+        {
+            return;
+        }
+
+        var lastCheck = _settings.LastUpdateCheckUtc;
+        if (lastCheck.HasValue && DateTimeOffset.UtcNow - lastCheck.Value < TimeSpan.FromHours(24))
+        {
+            return;
+        }
+
+        _updateCheckInProgress = true;
+        _settings.LastUpdateCheckUtc = DateTimeOffset.UtcNow;
+        _settings.Save();
+        try
+        {
+            var result = await UpdateChecker.CheckAsync(_settings, CancellationToken.None);
+            if (result.UpdateAvailable &&
+                _settings.Notifications &&
+                !string.Equals(_settings.LastNotifiedUpdateVersion, result.LatestVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                _notificationUrl = result.ReleaseUrl;
+                _settings.LastNotifiedUpdateVersion = result.LatestVersion;
+                _settings.Save();
+                Toast(
+                    Strings.Get("Update_AvailableTitle"),
+                    Strings.Format("Update_AvailableText", result.CurrentVersion, result.LatestVersion),
+                    result.ReleaseUrl,
+                    NotificationIcon.Info);
+            }
+        }
+        catch (HttpRequestException)
+        {
+        }
+        catch (TaskCanceledException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (JsonException)
+        {
+        }
+        finally
+        {
+            _updateCheckInProgress = false;
+        }
     }
 
     private async Task RefreshAsync(bool force = false)
     {
+        _ = CheckForUpdatesDailyAsync();
         if (_refreshing)
         {
             if (force)

@@ -24,6 +24,11 @@ public class AppSettings
     public bool TrayAlertOtherPrComments { get; set; } = false;
     public bool ShowBuildEta { get; set; } = true;
     public bool OnlyMyBuilds { get; set; } = false;
+    public DateTimeOffset? LastUpdateCheckUtc { get; set; }
+    public string LastNotifiedUpdateVersion { get; set; } = "";
+    public string UpdateLatestReleaseApiUrl { get; set; } = "https://api.github.com/repos/mateusznj/CicdLight/releases/latest";
+    public string UpdateReleasesUrl { get; set; } = "https://github.com/mateusznj/CicdLight/releases";
+    public string UpdateRepositoryUrl { get; set; } = "https://github.com/mateusznj/CicdLight";
     public bool StartWithWindows { get; set; } = false;
     public string Language { get; set; } = "";                 // "" = system, "en", "pl"
     public List<string> WatchedItems { get; set; } = [];   // keys of watched pipelines/releases; empty = all
