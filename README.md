@@ -57,7 +57,7 @@ Nowości w wersji 1.3.0 opisano w [informacjach o wydaniu](RELEASE_NOTES_v1.3.0.
 
 1. Przejdź do [najnowszego wydania (GitHub Releases)](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Pobierz odpowiedni instalator z sekcji **Assets** i uruchom go.
-3. Uruchom CicdLight i otwórz **Settings**. Wybierz dostawcę, podaj organizację i projekt Azure DevOps wraz z PAT albo repozytorium GitHub wraz z opcjonalnym tokenem. Każde połączenie dodaj osobno, a potem wybierz obserwowane pipeline'y przy tym wpisie.
+3. Uruchom CicdLight i otwórz **Settings**. Wybierz dostawcę, podaj organizację i projekt Azure DevOps wraz z PAT albo repozytorium GitHub wraz z opcjonalnym tokenem. Każde połączenie dodaj osobno, a potem w jego wierszu kliknij **Skonfiguruj monitorowanie** i wybierz obserwowane pipeline'y, powiadomienia oraz repozytoria PR-ów.
 
 Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tokena z uprawnieniem **Actions: Read**. Do odczytu PR-ów token musi mieć uprawnienie **Pull requests: Read**; token jest też potrzebny do rozpoznania Twoich PR-ów i próśb o review. Dostęp do publicznych uruchomień Actions nie wymaga tokenu.
 
@@ -130,7 +130,7 @@ See the [v1.3.0 release notes](RELEASE_NOTES_v1.3.0.md) for what's new.
 
 1. Open the [latest GitHub Release](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Download the appropriate installer from **Assets** and run it.
-3. Open **Settings** and choose a provider. Add each Azure DevOps organization/project with its PAT or each GitHub repository with its optional token as a separate connection. Then choose the pipelines to monitor from that connection's row.
+3. Open **Settings** and choose a provider. Add each Azure DevOps organization/project with its PAT or each GitHub repository with its optional token as a separate connection. Then click **Configure monitoring** in that connection's row to choose the pipelines, notifications, and PR repositories to monitor.
 
 For private repositories, use a fine-grained token with **Actions: Read** and **Pull requests: Read** access. A token is also required to identify your own PRs and review requests. Public Actions runs can be read without a token.
 
