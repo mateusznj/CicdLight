@@ -77,6 +77,8 @@
   <data name="Connection_GitHubToken" xml:space="preserve"><value>Token GitHub</value></data>
   <data name="Connection_GitHubTokenOptional" xml:space="preserve"><value>Opcjonalny dla publicznych Actions; wymagany do rozpoznania Twoich PR-ów</value></data>
   <data name="Choose_ShowPullRequests" xml:space="preserve"><value>Pull requesty</value></data>
+  <data name="Choose_PullRequestRepositories" xml:space="preserve"><value>Repozytoria pull requestów</value></data>
+  <data name="Choose_PullRequestRepositoriesHint" xml:space="preserve"><value>Wybierz repozytoria, z których mają być pokazywane pull requesty. Dotyczy projektów z włączonymi pull requestami.</value></data>
   <data name="Connection_LeaveCredentialEmpty" xml:space="preserve"><value>Puste pole zachowa obecny token</value></data>
   <data name="Connection_TokenStored" xml:space="preserve"><value>token zapisany</value></data>
   <data name="Connection_RequiredFields" xml:space="preserve"><value>Uzupełnij wymagane pola połączenia.</value></data>

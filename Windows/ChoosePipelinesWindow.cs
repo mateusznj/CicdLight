@@ -7,10 +7,12 @@ public sealed class PipelineConfigurationControl : UserControl
 {
     private readonly List<(string Key, CheckBox Box)> _boxes = [];
     private readonly List<(string Project, CheckBox BuildFailed, CheckBox BuildFixed, CheckBox ReviewRequested, CheckBox UnresolvedComments, CheckBox ShowPullRequests)> _notificationBoxes = [];
+    private readonly List<(string Project, string Repository, CheckBox Box)> _repositoryBoxes = [];
 
     public PipelineConfigurationControl(
         IReadOnlyList<(string Key, string Project, string Text)> items,
         IReadOnlyList<string> projects,
+        IReadOnlyList<RepositoryInfo> repositories,
         ICollection<string> watched,
         IReadOnlyDictionary<string, ProjectNotificationSettings> notifications,
         ProjectNotificationSettings defaults,
@@ -67,6 +69,35 @@ public sealed class PipelineConfigurationControl : UserControl
             row++;
         }
         list.Children.Add(notificationGrid);
+
+        var repositoryGroups = repositories
+            .GroupBy(repository => repository.Project, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        if (repositoryGroups.Count > 0)
+        {
+            list.Children.Add(new TextBlock
+            {
+                Text = Strings.Get("Choose_PullRequestRepositories"),
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Margin = new Thickness(0, 12, 0, 0)
+            });
+            list.Children.Add(new TextBlock
+            {
+                Text = Strings.Get("Choose_PullRequestRepositoriesHint"),
+                TextWrapping = TextWrapping.Wrap,
+                Opacity = 0.7,
+                Margin = new Thickness(0, 0, 0, 4)
+            });
+            foreach (var group in repositoryGroups)
+            {
+                var settings = FindProjectSettings(notifications, group.Key) ?? defaults;
+                list.Children.Add(CreateRepositoryGroup(group.Key,
+                    group.Select(repository => repository.Name).Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase).ToList(),
+                    settings));
+            }
+        }
         list.Children.Add(new TextBlock
         {
             Text = Strings.Get("Choose_Pipelines"),
@@ -150,14 +181,22 @@ public sealed class PipelineConfigurationControl : UserControl
             var savedNotifications = new Dictionary<string, ProjectNotificationSettings>(notifications, StringComparer.OrdinalIgnoreCase);
             foreach (var (project, failed, fixedBuild, review, unresolvedComments, showPullRequests) in _notificationBoxes)
             {
-                    savedNotifications[project] = new ProjectNotificationSettings
-                    {
-                        BuildFailed = failed.IsChecked == true,
-                        BuildFixed = fixedBuild.IsChecked == true,
-                        ReviewRequested = review.IsChecked == true,
-                        UnresolvedComments = unresolvedComments.IsChecked == true,
-                        ShowPullRequests = showPullRequests.IsChecked == true
-                    };
+                var listed = _repositoryBoxes.Where(box => string.Equals(box.Project, project, StringComparison.OrdinalIgnoreCase)).ToList();
+                var previouslyHidden = (FindProjectSettings(notifications, project) ?? defaults).HiddenPullRequestRepositories;
+                // Keep hidden repositories that were not listed (e.g. the repository list failed to load).
+                var hidden = previouslyHidden
+                    .Where(name => !listed.Any(box => string.Equals(box.Repository, name, StringComparison.OrdinalIgnoreCase)))
+                    .Concat(listed.Where(box => box.Box.IsChecked != true).Select(box => box.Repository))
+                    .ToList();
+                savedNotifications[project] = new ProjectNotificationSettings
+                {
+                    BuildFailed = failed.IsChecked == true,
+                    BuildFixed = fixedBuild.IsChecked == true,
+                    ReviewRequested = review.IsChecked == true,
+                    UnresolvedComments = unresolvedComments.IsChecked == true,
+                    ShowPullRequests = showPullRequests.IsChecked == true,
+                    HiddenPullRequestRepositories = hidden
+                };
             }
             onSaved(chosen, savedNotifications);
         };
@@ -180,6 +219,61 @@ public sealed class PipelineConfigurationControl : UserControl
         root.Children.Add(scroll);
         root.Children.Add(buttons);
         Content = root;
+    }
+
+    private static ProjectNotificationSettings? FindProjectSettings(
+        IReadOnlyDictionary<string, ProjectNotificationSettings> notifications, string project) =>
+        notifications.FirstOrDefault(pair => string.Equals(pair.Key, project, StringComparison.OrdinalIgnoreCase)).Value;
+
+    private Expander CreateRepositoryGroup(string project, IReadOnlyList<string> names, ProjectNotificationSettings settings)
+    {
+        var children = new List<CheckBox>();
+        var body = new StackPanel { Spacing = 2, Padding = new Thickness(24, 0, 0, 0) };
+        foreach (var name in names)
+        {
+            var box = new CheckBox { Content = name, IsChecked = !settings.IsRepositoryHidden(name) };
+            _repositoryBoxes.Add((project, name, box));
+            children.Add(box);
+            body.Children.Add(box);
+        }
+
+        var header = new CheckBox { IsThreeState = true, Content = $"{project} ({names.Count})" };
+        var updating = false;
+        void SyncHeader()
+        {
+            updating = true;
+            var on = children.Count(c => c.IsChecked == true);
+            header.IsChecked = on == 0 ? false : on == children.Count ? true : null;
+            updating = false;
+        }
+        header.Click += (_, _) =>
+        {
+            if (updating)
+            {
+                return;
+            }
+            var value = header.IsChecked == true;
+            foreach (var c in children)
+            {
+                c.IsChecked = value;
+            }
+            SyncHeader();
+        };
+        foreach (var c in children)
+        {
+            c.Checked += (_, _) => SyncHeader();
+            c.Unchecked += (_, _) => SyncHeader();
+        }
+        SyncHeader();
+
+        return new Expander
+        {
+            Header = header,
+            Content = body,
+            IsExpanded = false,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
     }
 
     private static CheckBox CreateNotificationBox(Grid grid, string project, string eventName, bool isChecked, int column, int row)

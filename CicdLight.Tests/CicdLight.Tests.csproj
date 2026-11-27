@@ -11,6 +11,7 @@
     <Compile Include="..\Models\BuildInfo.cs" />
     <Compile Include="..\Models\PullRequestInfo.cs" />
     <Compile Include="..\Models\ReleaseInfo.cs" />
+    <Compile Include="..\Models\RepositoryInfo.cs" />
     <Compile Include="..\Models\Snapshot.cs" />
     <Compile Include="..\Enums\Health.cs" />
     <Compile Include="..\Integrations\BuildEtaEstimator.cs" />

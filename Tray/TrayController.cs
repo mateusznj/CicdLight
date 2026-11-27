@@ -22,6 +22,7 @@ public sealed class TrayController : IDisposable
     private Snapshot _snapshot = Snapshot.Empty();
     private Snapshot _all = Snapshot.Empty();
     private readonly Dictionary<string, IReadOnlyList<string>> _connectionProjects = [];
+    private readonly Dictionary<string, IReadOnlyList<RepositoryInfo>> _connectionRepositories = [];
     private Dictionary<string, BuildInfo>? _previousBuilds;
     private HashSet<string>? _previousReviewPrs;
     private Dictionary<string, int>? _previousUnresolvedComments;
@@ -206,6 +207,7 @@ public sealed class TrayController : IDisposable
             foreach (var result in results)
             {
                     _connectionProjects[result.Connection.Id] = result.Snapshot.ProjectList ?? [];
+                    _connectionRepositories[result.Connection.Id] = result.Snapshot.RepositoryList ?? [];
             }
             var errors = results.Count(result => result.Snapshot.Error != null);
             _all = new Snapshot(
@@ -385,7 +387,7 @@ public sealed class TrayController : IDisposable
             _settings = AppSettings.Load();
             ApplySettings();
             _settingsWindow?.UpdateSettings(_settings);
-        }, GetPipelineItems, GetProjects, ShowTestNotification);
+        }, GetPipelineItems, GetProjects, GetRepositories, ShowTestNotification);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         TrayPopupWindow.BringToFront(_settingsWindow);
     }
@@ -406,6 +408,9 @@ public sealed class TrayController : IDisposable
             .OrderBy(project => project, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
     }
+
+    private IReadOnlyList<RepositoryInfo> GetRepositories(IntegrationConnection connection) =>
+        _connectionRepositories.GetValueOrDefault(connection.Id) ?? [];
 
     private void ShowTestNotification()
     {

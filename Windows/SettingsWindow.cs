@@ -36,12 +36,14 @@ public sealed class SettingsWindow : Window
     private readonly Action _testNotification;
     private readonly Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> _getPipelineItems;
     private readonly Func<IntegrationConnection, IReadOnlyList<string>> _getProjects;
+    private readonly Func<IntegrationConnection, IReadOnlyList<RepositoryInfo>> _getRepositories;
     private ConnectionEditorWindow? _connectionEditor;
     private IntegrationConnection? _pipelineConnection;
 
     public SettingsWindow(AppSettings settings, Action onSaved,
         Func<IntegrationConnection, IReadOnlyList<(string Key, string Project, string Text)>> getPipelineItems,
         Func<IntegrationConnection, IReadOnlyList<string>> getProjects,
+        Func<IntegrationConnection, IReadOnlyList<RepositoryInfo>> getRepositories,
         Action testNotification)
     {
         _s = settings;
@@ -49,6 +51,7 @@ public sealed class SettingsWindow : Window
         _testNotification = testNotification;
         _getPipelineItems = getPipelineItems;
         _getProjects = getProjects;
+        _getRepositories = getRepositories;
         Title = Strings.Get("Settings_Title");
         WindowIcon.Apply(this);
         AppWindow.Resize(new SizeInt32(760, 720));
@@ -348,6 +351,7 @@ public sealed class SettingsWindow : Window
             _pipelinePage.Children.Add(new PipelineConfigurationControl(
                 items,
                 projects,
+                _getRepositories(connection),
                 connection.HasSelection ? connection.SelectedItems : [],
                 _s.ProjectNotifications,
                 new ProjectNotificationSettings

@@ -8,7 +8,8 @@ public record Snapshot(
     IReadOnlyList<string>? ProjectList = null,
     bool AlertMyPrComments = true,
     bool AlertOtherPrComments = false,
-    bool ShowBuildEta = true)
+    bool ShowBuildEta = true,
+    IReadOnlyList<RepositoryInfo>? RepositoryList = null)
 {
     public IReadOnlyList<ReleaseInfo> Releases => ReleaseList ?? [];
     public int MyPullRequestsToRevise => PullRequests.Count(p => p.IsMine && p.HasUnresolvedComments);

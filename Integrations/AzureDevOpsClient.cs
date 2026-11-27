@@ -35,10 +35,12 @@ public sealed class AzureDevOpsClient : IIntegrationClient
             var buildTasks = projects.Select(p => GetBuildsAsync(p, ct)).ToList();
             var releaseTasks = projects.Select(p => GetReleasesAsync(p, ct)).ToList();
             var prTasks = projects.Where(ShowPullRequestsFor).Select(p => GetPullRequestsAsync(p, ct)).ToList();
-            await Task.WhenAll(buildTasks.Cast<Task>().Concat(releaseTasks).Concat(prTasks));
+            var repositoryTasks = projects.Select(p => GetRepositoriesAsync(p, ct)).ToList();
+            await Task.WhenAll(buildTasks.Cast<Task>().Concat(releaseTasks).Concat(prTasks).Concat(repositoryTasks));
 
             return new Snapshot(buildTasks.SelectMany(t => t.Result).ToList(), prTasks.SelectMany(t => t.Result).ToList(), null,
-                releaseTasks.SelectMany(t => t.Result).ToList(), projects);
+                releaseTasks.SelectMany(t => t.Result).ToList(), projects,
+                RepositoryList: repositoryTasks.SelectMany(t => t.Result).ToList());
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)
@@ -137,8 +139,24 @@ public sealed class AzureDevOpsClient : IIntegrationClient
         catch (HttpRequestException) { return []; }   // project without Releases
     }
 
-    private bool ShowPullRequestsFor(string project) =>
-        !_s.ProjectNotifications.TryGetValue(project, out var settings) || settings.ShowPullRequests;
+    private ProjectNotificationSettings? GetProjectSettings(string project) =>
+        _s.ProjectNotifications.FirstOrDefault(entry =>
+            string.Equals(entry.Key, project, StringComparison.OrdinalIgnoreCase)).Value;
+
+    private bool ShowPullRequestsFor(string project) => GetProjectSettings(project)?.ShowPullRequests ?? true;
+
+    private async Task<List<RepositoryInfo>> GetRepositoriesAsync(string project, CancellationToken ct)
+    {
+        try
+        {
+            var json = await GetAsync($"{_connection.OrganizationUrl}/{Uri.EscapeDataString(project)}/_apis/git/repositories?{Api}", ct);
+            return json.GetProperty("value").EnumerateArray()
+                .Select(r => new RepositoryInfo(project, r.GetProperty("name").GetString() ?? "", _connection.Id))
+                .Where(r => r.Name.Length > 0)
+                .ToList();
+        }
+        catch (HttpRequestException) { return []; }   // project without Repos
+    }
 
     private async Task<List<PullRequestInfo>> GetPullRequestsAsync(string project, CancellationToken ct)
     {
@@ -171,7 +189,10 @@ public sealed class AzureDevOpsClient : IIntegrationClient
             result[info.Id] = info with { IsMine = true, NeedsMyReview = false };
         }
 
-        var pullRequests = result.Values.OrderByDescending(p => p.Id).ToList();
+        var settings = GetProjectSettings(project);
+        var pullRequests = result.Values
+            .Where(p => settings == null || !settings.IsRepositoryHidden(p.Repository))
+            .OrderByDescending(p => p.Id).ToList();
         var visiblePullRequests = pullRequests.Where(p => p.NeedsMyReview).Take(5)
             .Concat(pullRequests.Where(p => p.IsMine).Take(3))
             .Concat(pullRequests.Where(p => !p.IsMine && !p.NeedsMyReview).Take(5))
