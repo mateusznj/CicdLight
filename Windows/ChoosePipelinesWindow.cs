@@ -20,12 +20,6 @@ public sealed class PipelineConfigurationControl : UserControl
         Action onCancelled)
     {
         var list = new StackPanel { Spacing = 6, Padding = new Thickness(16) };
-        list.Children.Add(new TextBlock
-        {
-            Text = Strings.Get("Choose_Notifications"),
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 4)
-        });
         var notificationGrid = new Grid { ColumnSpacing = 8, RowSpacing = 4, MinWidth = 500 };
         notificationGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         notificationGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
@@ -68,7 +62,14 @@ public sealed class PipelineConfigurationControl : UserControl
             _notificationBoxes.Add((project, failed, fixedBuild, review, unresolvedComments, showPullRequests));
             row++;
         }
-        list.Children.Add(notificationGrid);
+        list.Children.Add(new Expander
+        {
+            Header = CreateSectionHeader(Strings.Get("Choose_Notifications")),
+            Content = notificationGrid,
+            IsExpanded = false,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        });
 
         var repositoryGroups = repositories
             .GroupBy(repository => repository.Project, StringComparer.OrdinalIgnoreCase)
@@ -76,13 +77,8 @@ public sealed class PipelineConfigurationControl : UserControl
             .ToList();
         if (repositoryGroups.Count > 0)
         {
-            list.Children.Add(new TextBlock
-            {
-                Text = Strings.Get("Choose_PullRequestRepositories"),
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Margin = new Thickness(0, 12, 0, 0)
-            });
-            list.Children.Add(new TextBlock
+            var repositoryBody = new StackPanel { Spacing = 4 };
+            repositoryBody.Children.Add(new TextBlock
             {
                 Text = Strings.Get("Choose_PullRequestRepositoriesHint"),
                 TextWrapping = TextWrapping.Wrap,
@@ -92,18 +88,16 @@ public sealed class PipelineConfigurationControl : UserControl
             foreach (var group in repositoryGroups)
             {
                 var settings = FindProjectSettings(notifications, group.Key) ?? defaults;
-                list.Children.Add(CreateRepositoryGroup(group.Key,
+                repositoryBody.Children.Add(CreateRepositoryGroup(group.Key,
                     group.Select(repository => repository.Name).Distinct(StringComparer.OrdinalIgnoreCase)
                         .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase).ToList(),
                     settings));
             }
+            list.Children.Add(CreateCollapsedExpander(CreateSectionHeader(Strings.Get("Choose_PullRequestRepositories")), repositoryBody));
         }
-        list.Children.Add(new TextBlock
-        {
-            Text = Strings.Get("Choose_Pipelines"),
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Margin = new Thickness(0, 12, 0, 4)
-        });
+
+        var pipelinesBody = new StackPanel { Spacing = 4 };
+        list.Children.Add(CreateCollapsedExpander(CreateSectionHeader(Strings.Get("Choose_Pipelines")), pipelinesBody));
 
         foreach (var group in items.GroupBy(i => i.Project).OrderBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase))
         {
@@ -118,59 +112,21 @@ public sealed class PipelineConfigurationControl : UserControl
                     continue;
                 }
 
-                body.Children.Add(new TextBlock
-                {
-                    Text = $"{title} ({part.Count})",
-                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Opacity = 0.7,
-                    Margin = new Thickness(0, body.Children.Count == 0 ? 0 : 8, 0, 2)
-                });
+                var sectionBody = new StackPanel { Spacing = 2, Padding = new Thickness(24, 0, 0, 0) };
+                var sectionChildren = new List<CheckBox>();
                 foreach (var (key, _, text) in part)
                 {
                     var box = new CheckBox { Content = text, IsChecked = watched.Count == 0 || watched.Contains(key) };
                     _boxes.Add((key, box));
                     children.Add(box);
-                    body.Children.Add(box);
+                    sectionChildren.Add(box);
+                    sectionBody.Children.Add(box);
                 }
+
+                body.Children.Add(CreateCollapsedExpander(CreateTriStateHeader($"{title} ({part.Count})", sectionChildren), sectionBody));
             }
 
-            var header = new CheckBox { IsThreeState = true, Content = $"{group.Key} ({children.Count})" };
-            var updating = false;
-            void SyncHeader()
-            {
-                updating = true;
-                var on = children.Count(c => c.IsChecked == true);
-                header.IsChecked = on == 0 ? false : on == children.Count ? true : null;
-                updating = false;
-            }
-            header.Click += (_, _) =>
-            {
-                if (updating)
-                {
-                    return;
-                }
-                var value = header.IsChecked == true;
-                foreach (var c in children)
-                {
-                    c.IsChecked = value;
-                }
-                SyncHeader();
-            };
-            foreach (var c in children)
-            {
-                c.Checked += (_, _) => SyncHeader();
-                c.Unchecked += (_, _) => SyncHeader();
-            }
-            SyncHeader();
-
-            list.Children.Add(new Expander
-            {
-                Header = header,
-                Content = body,
-                IsExpanded = true,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch
-            });
+            pipelinesBody.Children.Add(CreateCollapsedExpander(CreateTriStateHeader($"{group.Key} ({children.Count})", children), body));
         }
 
         var save = new Button { Content = Strings.Get("Button_Save"), Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
@@ -224,6 +180,56 @@ public sealed class PipelineConfigurationControl : UserControl
     private static ProjectNotificationSettings? FindProjectSettings(
         IReadOnlyDictionary<string, ProjectNotificationSettings> notifications, string project) =>
         notifications.FirstOrDefault(pair => string.Equals(pair.Key, project, StringComparison.OrdinalIgnoreCase)).Value;
+
+    private static TextBlock CreateSectionHeader(string text)
+    {
+        return new TextBlock { Text = text, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
+    }
+
+    private static Expander CreateCollapsedExpander(object header, object content)
+    {
+        return new Expander
+        {
+            Header = header,
+            Content = content,
+            IsExpanded = false,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+    }
+
+    private static CheckBox CreateTriStateHeader(string text, IReadOnlyList<CheckBox> children)
+    {
+        var header = new CheckBox { IsThreeState = true, Content = text };
+        var updating = false;
+        void SyncHeader()
+        {
+            updating = true;
+            var on = children.Count(c => c.IsChecked == true);
+            header.IsChecked = on == 0 ? false : on == children.Count ? true : null;
+            updating = false;
+        }
+        header.Click += (_, _) =>
+        {
+            if (updating)
+            {
+                return;
+            }
+            var value = header.IsChecked == true;
+            foreach (var c in children)
+            {
+                c.IsChecked = value;
+            }
+            SyncHeader();
+        };
+        foreach (var c in children)
+        {
+            c.Checked += (_, _) => SyncHeader();
+            c.Unchecked += (_, _) => SyncHeader();
+        }
+        SyncHeader();
+        return header;
+    }
 
     private Expander CreateRepositoryGroup(string project, IReadOnlyList<string> names, ProjectNotificationSettings settings)
     {
