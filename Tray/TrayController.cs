@@ -13,9 +13,12 @@ namespace CicdLight;
 
 public sealed class TrayController : IDisposable
 {
+    private static readonly TimeSpan TestNotificationInterval = TimeSpan.FromSeconds(6);
+    private bool _testNotificationsRunning;
     private readonly TaskbarIcon _tray;
     private readonly TrayPopupWindow _popup;
     private readonly DispatcherQueueTimer _timer;
+    private readonly ToastIconProvider _toastIcons = new();
     private AppSettings _settings = AppSettings.Load();
     private readonly List<(IntegrationConnection Connection, IIntegrationClient Client)> _clients = [];
     private CancellationTokenSource? _cts;
@@ -148,7 +151,7 @@ public sealed class TrayController : IDisposable
                     Strings.Get("Update_AvailableTitle"),
                     Strings.Format("Update_AvailableText", result.CurrentVersion, result.LatestVersion),
                     result.ReleaseUrl,
-                    NotificationIcon.Info);
+                    ToastIcon.Info);
             }
         }
         catch (HttpRequestException)
@@ -296,17 +299,17 @@ public sealed class TrayController : IDisposable
 
                 if (b.IsFailed && notify.BuildFailed)
                 {
-                        Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, NotificationIcon.Error);
+                        Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, ToastIcon.BuildFailed);
                 }
                 else if (b.IsSucceeded && old != null && old.IsFailed && notify.BuildFixed)
                 {
-                        Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, NotificationIcon.Info);
+                        Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, ToastIcon.BuildFixed);
                 }
             }
 
             foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Key) && GetProjectNotifications(p.Project).ReviewRequested))
             {
-                    Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, NotificationIcon.Info);
+                    Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, ToastIcon.ReviewRequested);
             }
 
             foreach (var p in s.PullRequests.Where(p =>
@@ -315,7 +318,7 @@ public sealed class TrayController : IDisposable
                          GetProjectNotifications(p.Project).UnresolvedComments))
                 Toast(Strings.Get("Toast_UnresolvedComment"),
                     Strings.Format("Toast_UnresolvedCommentText", p.Id, p.Title, p.UnresolvedCommentCount),
-                    p.Url, NotificationIcon.Info);
+                    p.Url, ToastIcon.UnresolvedComments);
         }
 
         _previousBuilds = builds;
@@ -323,10 +326,19 @@ public sealed class TrayController : IDisposable
         _previousUnresolvedComments = unresolvedComments;
     }
 
-    private void Toast(string title, string text, string url, NotificationIcon icon)
+    private void Toast(string title, string text, string url, ToastIcon icon)
     {
         _notificationUrl = url;
-        _tray.ShowNotification(title, text, icon);
+        var customIcon = _toastIcons.Get(icon);
+        try
+        {
+            _tray.ShowNotification(title, text, NotificationIcon.Info, customIcon, largeIcon: customIcon != null);
+        }
+        catch (InvalidOperationException) when (customIcon != null)
+        {
+            // The shell rejected the custom icon (e.g. size mismatch); fall back to the standard one.
+            _tray.ShowNotification(title, text, NotificationIcon.Info);
+        }
     }
 
     private ProjectNotificationSettings GetProjectNotifications(string project)
@@ -387,7 +399,7 @@ public sealed class TrayController : IDisposable
             _settings = AppSettings.Load();
             ApplySettings();
             _settingsWindow?.UpdateSettings(_settings);
-        }, GetPipelineItems, GetProjects, GetRepositories, ShowTestNotification);
+        }, GetPipelineItems, GetProjects, GetRepositories, () => _ = ShowTestNotificationsAsync());
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         TrayPopupWindow.BringToFront(_settingsWindow);
     }
@@ -412,13 +424,42 @@ public sealed class TrayController : IDisposable
     private IReadOnlyList<RepositoryInfo> GetRepositories(IntegrationConnection connection) =>
         _connectionRepositories.GetValueOrDefault(connection.Id) ?? [];
 
-    private void ShowTestNotification()
+    private async Task ShowTestNotificationsAsync()
     {
-        _notificationUrl = null;
-        _tray.ShowNotification(
-            Strings.Get("Toast_TestNotification"),
-            Strings.Get("Toast_TestNotificationText"),
-            NotificationIcon.Info);
+        if (_testNotificationsRunning)
+        {
+            return;
+        }
+
+        _testNotificationsRunning = true;
+        try
+        {
+            var notifications = new (string Title, string Text, ToastIcon Icon)[]
+            {
+                (Strings.Get("Toast_TestNotification"), Strings.Get("Toast_TestNotificationText"), ToastIcon.Info),
+                (Strings.Format("Toast_BuildFailed", "CicdLight-CI"), Strings.Format("Toast_BuildFailedText", "main", "123", "Jan Kowalski"), ToastIcon.BuildFailed),
+                (Strings.Format("Toast_BuildFixed", "CicdLight-CI"), Strings.Format("Toast_BuildFixedText", "main", "124"), ToastIcon.BuildFixed),
+                (Strings.Format("Toast_Review", "CicdLight"), Strings.Format("Toast_ReviewText", 42, "Add repository filter", "Jan Kowalski"), ToastIcon.ReviewRequested),
+                (Strings.Get("Toast_UnresolvedComment"), Strings.Format("Toast_UnresolvedCommentText", 42, "Add repository filter", 2), ToastIcon.UnresolvedComments),
+                (Strings.Get("Update_AvailableTitle"), Strings.Format("Update_AvailableText", "1.2.0", "1.3.0"), ToastIcon.Info)
+            };
+
+            for (var i = 0; i < notifications.Length; i++)
+            {
+                if (i > 0)
+                {
+                    // A new balloon replaces the one still on screen, so give each one time to be seen.
+                    await Task.Delay(TestNotificationInterval);
+                }
+
+                var (title, text, icon) = notifications[i];
+                Toast(title, text, "", icon);
+            }
+        }
+        finally
+        {
+            _testNotificationsRunning = false;
+        }
     }
 
     private static void OpenUrl(string? url)
@@ -488,6 +529,7 @@ public sealed class TrayController : IDisposable
             client.Client.Dispose();
         }
         _clients.Clear();
+        _toastIcons.Dispose();
         _tray.Dispose();
     }
 }
