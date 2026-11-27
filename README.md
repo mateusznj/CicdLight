@@ -11,7 +11,7 @@
   [🇵🇱 Polski](#-polski) · [🇬🇧 English](#-english) · [Pobierz / Download](https://github.com/mateusznj/CicdLight/releases/latest)
 
   <a href="https://github.com/mateusznj/CicdLight/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/mateusznj/CicdLight/build.yml?branch=main&label=build" alt="Build status" /></a>
-  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.3.0"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.3.0/total?label=downloads" alt="v1.3.0 release downloads" /></a>
+  <a href="https://github.com/mateusznj/CicdLight/releases/tag/v1.3.1"><img src="https://img.shields.io/github/downloads/mateusznj/CicdLight/v1.3.1/total?label=downloads" alt="v1.3.1 release downloads" /></a>
   <a href="https://github.com/mateusznj/CicdLight/releases/latest"><img src="https://img.shields.io/github/v/release/mateusznj/CicdLight?label=version" alt="Latest release version" /></a>
 </div>
 
@@ -53,7 +53,7 @@ CicdLight to niewielka aplikacja, która pozwala śledzić buildy i pull request
 
 ### Pobieranie i instalacja
 
-Nowości w wersji 1.3.0 opisano w [informacjach o wydaniu](RELEASE_NOTES_v1.3.0.md).
+Nowości w wersji 1.3.1 opisano w [informacjach o wydaniu](RELEASE_NOTES_v1.3.1.md).
 
 1. Przejdź do [najnowszego wydania (GitHub Releases)](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Pobierz odpowiedni instalator z sekcji **Assets** i uruchom go.
@@ -126,7 +126,7 @@ CicdLight is a lightweight Windows system tray app for monitoring Azure DevOps b
 
 ### Download and installation
 
-See the [v1.3.0 release notes](RELEASE_NOTES_v1.3.0.md) for what's new.
+See the [v1.3.1 release notes](RELEASE_NOTES_v1.3.1.md) for what's new.
 
 1. Open the [latest GitHub Release](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Download the appropriate installer from **Assets** and run it.
