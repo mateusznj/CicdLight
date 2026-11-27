@@ -78,7 +78,13 @@ public sealed class TrayPopupWindow : Window
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         root.Children.Add(header);
-        var scroll = new ScrollViewer { Content = _list }.WithWheelFallback();
+        // Without this the rows are measured with unlimited width, so long titles push the comments icon out of view.
+        var scroll = new ScrollViewer
+        {
+            Content = _list,
+            HorizontalScrollMode = ScrollMode.Disabled,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        }.WithWheelFallback();
         Grid.SetRow(scroll, 1);
         root.Children.Add(scroll);
         Content = root;
