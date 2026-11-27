@@ -6,8 +6,6 @@ using System.Text.Json;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Text;
-using Microsoft.UI.Xaml.Controls;
 
 namespace CicdLight;
 
@@ -209,8 +207,8 @@ public sealed class TrayController : IDisposable
             var results = await Task.WhenAll(requests);
             foreach (var result in results)
             {
-                    _connectionProjects[result.Connection.Id] = result.Snapshot.ProjectList ?? [];
-                    _connectionRepositories[result.Connection.Id] = result.Snapshot.RepositoryList ?? [];
+                _connectionProjects[result.Connection.Id] = result.Snapshot.ProjectList ?? [];
+                _connectionRepositories[result.Connection.Id] = result.Snapshot.RepositoryList ?? [];
             }
             var errors = results.Count(result => result.Snapshot.Error != null);
             _all = new Snapshot(
@@ -271,7 +269,7 @@ public sealed class TrayController : IDisposable
             var retryDelay = rateLimitRetry - DateTimeOffset.UtcNow;
             if (retryDelay > TimeSpan.Zero && retryDelay < interval)
             {
-                    interval = retryDelay;
+                interval = retryDelay;
             }
         }
 
@@ -299,17 +297,17 @@ public sealed class TrayController : IDisposable
 
                 if (b.IsFailed && notify.BuildFailed)
                 {
-                        Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, ToastIcon.BuildFailed);
+                    Toast(Strings.Format("Toast_BuildFailed", b.Definition), Strings.Format("Toast_BuildFailedText", b.Branch, b.BuildNumber, b.RequestedFor), b.Url, ToastIcon.BuildFailed);
                 }
                 else if (b.IsSucceeded && old != null && old.IsFailed && notify.BuildFixed)
                 {
-                        Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, ToastIcon.BuildFixed);
+                    Toast(Strings.Format("Toast_BuildFixed", b.Definition), Strings.Format("Toast_BuildFixedText", b.Branch, b.BuildNumber), b.Url, ToastIcon.BuildFixed);
                 }
             }
 
             foreach (var p in s.PullRequests.Where(p => p.NeedsMyReview && !_previousReviewPrs.Contains(p.Key) && GetProjectNotifications(p.Project).ReviewRequested))
             {
-                    Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, ToastIcon.ReviewRequested);
+                Toast(Strings.Format("Toast_Review", p.Repository), Strings.Format("Toast_ReviewText", p.Id, p.Title, p.Author), p.Url, ToastIcon.ReviewRequested);
             }
 
             foreach (var p in s.PullRequests.Where(p =>
@@ -408,7 +406,7 @@ public sealed class TrayController : IDisposable
     {
         if (connection.Provider == IntegrationProvider.GitHub)
         {
-                return [GitHubActionsClient.GetRepositoryName(connection.Repository)];
+            return [GitHubActionsClient.GetRepositoryName(connection.Repository)];
         }
 
         return _all.Builds.Where(build => build.ConnectionId == connection.Id).Select(build => build.Project)
@@ -466,7 +464,7 @@ public sealed class TrayController : IDisposable
     {
         if (!string.IsNullOrEmpty(url))
         {
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }
 
