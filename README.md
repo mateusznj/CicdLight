@@ -59,6 +59,10 @@ Nowości w wersji 1.3.1 opisano w [informacjach o wydaniu](RELEASE_NOTES_v1.3.1.
 2. Pobierz odpowiedni instalator z sekcji **Assets** i uruchom go.
 3. Uruchom CicdLight i otwórz **Settings**. Wybierz dostawcę, podaj organizację i projekt Azure DevOps wraz z PAT albo repozytorium GitHub wraz z opcjonalnym tokenem. Każde połączenie dodaj osobno, a potem w jego wierszu kliknij **Skonfiguruj monitorowanie** i wybierz obserwowane pipeline'y, powiadomienia oraz repozytoria PR-ów.
 
+### Wydawanie nowej wersji
+
+Aby opublikować wersję, dodaj jeden plik `RELEASE_NOTES_vX.Y.Z.md` (np. `RELEASE_NOTES_v1.3.2.md`) i wypchnij go na `main`. GitHub Actions zbuduje instalatory Windows x64 i ARM64, utworzy tag `vX.Y.Z` i opublikuje GitHub Release z treścią pliku. Każde wydanie wymaga nowego numeru wersji; zmiana notatek dla już opublikowanej wersji zakończy workflow błędem. Workflow używa wbudowanego `GITHUB_TOKEN` z uprawnieniem `contents: write`; jeśli publikacja zostanie zablokowana, sprawdź **Settings → Actions → General → Workflow permissions**.
+
 Do odczytu uruchomień Actions w prywatnych repozytoriach użyj fine-grained tokena z uprawnieniem **Actions: Read**. Do odczytu PR-ów token musi mieć uprawnienie **Pull requests: Read**; token jest też potrzebny do rozpoznania Twoich PR-ów i próśb o review. Dostęp do publicznych uruchomień Actions nie wymaga tokenu.
 
 ### Wymagania
@@ -131,6 +135,10 @@ See the [v1.3.1 release notes](RELEASE_NOTES_v1.3.1.md) for what's new.
 1. Open the [latest GitHub Release](https://github.com/mateusznj/CicdLight/releases/latest).
 2. Download the appropriate installer from **Assets** and run it.
 3. Open **Settings** and choose a provider. Add each Azure DevOps organization/project with its PAT or each GitHub repository with its optional token as a separate connection. Then click **Configure monitoring** in that connection's row to choose the pipelines, notifications, and PR repositories to monitor.
+
+### Releasing a new version
+
+To publish a version, add one `RELEASE_NOTES_vX.Y.Z.md` file (for example, `RELEASE_NOTES_v1.3.2.md`) and push it to `main`. GitHub Actions will build Windows x64 and ARM64 installers, create the `vX.Y.Z` tag, and publish a GitHub Release using the file contents. Each release needs a new version number; changing notes for an already-published version will fail the workflow. The workflow uses the built-in `GITHUB_TOKEN` with `contents: write`; if publishing is blocked, check **Settings → Actions → General → Workflow permissions**.
 
 For private repositories, use a fine-grained token with **Actions: Read** and **Pull requests: Read** access. A token is also required to identify your own PRs and review requests. Public Actions runs can be read without a token.
 

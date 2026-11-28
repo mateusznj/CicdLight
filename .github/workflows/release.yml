@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - RELEASE_NOTES_v*.md
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Identify release notes
+        id: release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $changedFiles = @(git diff --name-only $env:BEFORE $env:GITHUB_SHA -- 'RELEASE_NOTES_v*.md')
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Could not identify changed release notes.'
+          }
+
+          $releaseNotes = @($changedFiles | Where-Object { $_ -match '^RELEASE_NOTES_v\d+\.\d+\.\d+\.md$' })
+          if ($releaseNotes.Count -ne 1 -or -not (Test-Path $releaseNotes[0])) {
+            throw 'A release push must add or update exactly one RELEASE_NOTES_vX.Y.Z.md file.'
+          }
+
+          $tag = [regex]::Match($releaseNotes[0], '^RELEASE_NOTES_(v\d+\.\d+\.\d+)\.md$').Groups[1].Value
+          $version = $tag.TrimStart('v')
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "A GitHub Release for $tag already exists."
+          }
+          $global:LASTEXITCODE = 0
+
+          git show-ref --verify --quiet "refs/tags/$tag"
+          if ($LASTEXITCODE -eq 0) {
+            throw "A Git tag for $tag already exists."
+          }
+          if ($LASTEXITCODE -ne 1) {
+            throw "Could not verify whether the Git tag $tag already exists."
+          }
+          $global:LASTEXITCODE = 0
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "notes=$($releaseNotes[0])" >> $env:GITHUB_OUTPUT
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install WiX
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Could not install WiX.'
+          }
+          "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
+
+      - name: Build x64 and ARM64 installers
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          & .\installer\build-msi.ps1 -Version $env:VERSION -Arch x64
+          & .\installer\build-msi.ps1 -Version $env:VERSION -Arch arm64
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          NOTES: ${{ steps.release.outputs.notes }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          gh release create $env:TAG `
+            "artifacts\CicdLight-$env:VERSION-x64.msi" `
+            "artifacts\CicdLight-$env:VERSION-arm64.msi" `
+            --repo $env:GITHUB_REPOSITORY `
+            --title "CicdLight $env:TAG" `
+            --notes-file $env:NOTES `
+            --target $env:GITHUB_SHA
