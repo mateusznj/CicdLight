@@ -12,7 +12,7 @@ Wersja 1.3.1 porządkuje ekran konfiguracji połączenia: ma nową nazwę i wszy
 
 ### Instalacja
 
-Po opublikowaniu pobierz instalator Windows x64 z sekcji **Assets** na stronie [CicdLight v1.3.1](https://github.com/mateusznj/CicdLight/releases/tag/v1.3.1). Instalator aktualizuje wcześniejsze wersje.
+Pobierz instalator Windows x64 z sekcji **Assets** na stronie [CicdLight v1.3.1](https://github.com/mateusznj/CicdLight/releases/tag/v1.3.1). Instalator aktualizuje wcześniejsze wersje.
 
 ## 🇬🇧 English
 
@@ -26,4 +26,4 @@ Version 1.3.1 tidies up the connection configuration screen: it has a new name a
 
 ### Installation
 
-Once released, download the Windows x64 installer from the **Assets** section on the [CicdLight v1.3.1 release page](https://github.com/mateusznj/CicdLight/releases/tag/v1.3.1). The installer upgrades earlier versions.
+Download the Windows x64 installer from the **Assets** section on the [CicdLight v1.3.1 release page](https://github.com/mateusznj/CicdLight/releases/tag/v1.3.1). The installer upgrades earlier versions.
